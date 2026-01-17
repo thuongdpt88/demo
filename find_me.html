@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mắt Thần Siêu Tốc - V4 Ultimate</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; user-select: none; }
+        
+        /* Animation Effects */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .pop { animation: pop 0.2s ease-in-out; }
+
+        .grid-item {
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.1s;
+        }
+        .grid-item:active { transform: scale(0.9); filter: brightness(1.5); }
+
+        .hidden { display: none !important; }
+        
+        /* Custom Scrollbar */
+        .user-scroll::-webkit-scrollbar { height: 6px; }
+        .user-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+
+        /* Grid text scaling for massive grids */
+        .text-tiny { font-size: 0.65rem; line-height: 0.75rem; }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col overflow-hidden selection:bg-yellow-500 selection:text-black">
+
+    <!-- 1. MÀN HÌNH CHÀO -->
+    <div id="screen-welcome" class="flex-1 flex flex-col items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center relative">
+        <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm"></div>
+
+        <div class="relative z-10 bg-slate-800/80 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-2xl max-w-md w-full border border-white/10">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center p-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mb-4 shadow-[0_0_20px_rgba(234,179,8,0.4)] animate-pop">
+                    <i data-lucide="eye" class="w-12 h-12 text-slate-900"></i>
+                </div>
+                <h1 class="text-4xl font-black text-white uppercase tracking-tighter leading-none">Mắt Thần<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400">Ultimate</span></h1>
+            </div>
+
+            <!-- User Selection -->
+            <div id="user-selection-view">
+                <div class="flex justify-between items-end mb-2">
+                    <label class="text-xs font-bold uppercase text-slate-400">Người chơi:</label>
+                    <button onclick="toggleCreateUser()" class="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1 px-2 py-1 rounded hover:bg-white/5 transition-colors">
+                        <i data-lucide="plus-circle" class="w-3 h-3"></i> Tạo mới
+                    </button>
+                </div>
+                
+                <div class="flex gap-3 overflow-x-auto pb-4 user-scroll mb-6" id="saved-users-list">
+                    <!-- JS Render Users -->
+                </div>
+
+                <div class="flex gap-3 mt-4">
+                     <button onclick="showScreen('dashboard')" class="flex-1 bg-slate-700 hover:bg-slate-600 p-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border-b-4 border-slate-900 active:border-b-0 active:translate-y-1">
+                        <i data-lucide="trophy"></i> BXH
+                    </button>
+                    <button onclick="startGame()" class="flex-[2] bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-slate-900 p-4 rounded-xl font-black text-xl flex items-center justify-center gap-2 shadow-lg transform transition-all border-b-4 border-orange-700 active:border-b-0 active:translate-y-1">
+                        <i data-lucide="play" fill="currentColor"></i> CHƠI NGAY
+                    </button>
+                </div>
+            </div>
+
+            <!-- Create User Form -->
+            <div id="create-user-view" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-yellow-400">Tạo Nhân Vật Mới</h3>
+                    <button onclick="toggleCreateUser()" class="p-1 hover:bg-white/10 rounded"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <input type="text" id="new-user-name" class="w-full bg-black/40 border border-white/20 rounded-xl px-4 py-3 text-white font-bold mb-4 focus:ring-2 focus:ring-yellow-400 outline-none placeholder-white/30" placeholder="Nhập tên..." maxlength="12">
+                <div class="grid grid-cols-5 gap-2 mb-6" id="avatar-grid"></div>
+                <button onclick="createNewUser()" class="w-full bg-green-500 hover:bg-green-400 text-white p-3 rounded-xl font-bold shadow-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1">Lưu & Chọn</button>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-4 text-xs text-white/30 font-mono">Phiên bản V4.0 - Grid 12x12</div>
+    </div>
+
+    <!-- 2. MÀN HÌNH CHƠI -->
+    <div id="screen-playing" class="hidden flex-1 flex flex-col bg-slate-900 transition-colors duration-300 relative">
+        <!-- Header -->
+        <div class="bg-slate-800/95 backdrop-blur p-2 sticky top-0 z-40 border-b border-white/10 shadow-lg">
+            <div class="max-w-5xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <button onclick="confirmExit()" class="p-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-colors border border-transparent hover:border-red-400" title="Thoát">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                    <div class="flex items-center gap-2 bg-slate-700/50 pr-4 rounded-full border border-white/5 py-1 pl-1">
+                        <div class="bg-yellow-400 p-1.5 rounded-full text-slate-900 shadow-sm" id="play-avatar-icon"></div>
+                        <div class="text-xs font-bold text-white uppercase tracking-wide" id="play-username">User</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                     <div class="text-right">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Điểm</div>
+                        <div class="text-2xl font-mono font-black leading-none text-white drop-shadow-md" id="play-score">0</div>
+                     </div>
+                     <div class="text-right w-16">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Giây</div>
+                        <div class="text-2xl font-mono font-black leading-none text-green-400 drop-shadow-md" id="play-time">10</div>
+                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="flex-1 flex flex-col items-center p-2 max-w-5xl mx-auto w-full h-full overflow-hidden">
+            
+            <!-- Target Display -->
+            <div class="bg-white rounded-2xl p-2 w-full mb-2 shadow-2xl text-center relative overflow-hidden flex-shrink-0 min-h-[85px] flex flex-col justify-center border-b-4 border-slate-200">
+                <div id="time-bar" class="absolute top-0 left-0 h-1.5 bg-green-500 w-full transition-all duration-1000 ease-linear shadow-[0_0_10px_currentColor]"></div>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">MỤC TIÊU DUY NHẤT</div>
+                <div id="target-display" class="flex items-center justify-center text-slate-800 text-5xl font-black py-1 transition-transform">
+                    <!-- Target Content -->
+                </div>
+                <div class="absolute top-2 right-2 px-2 py-0.5 bg-indigo-600 text-white text-[10px] font-bold rounded shadow-sm" id="play-level">LV.1</div>
+            </div>
+
+            <!-- Matrix Grid -->
+            <div class="flex-1 w-full relative overflow-y-auto flex items-center justify-center bg-slate-800/40 rounded-2xl border border-white/5 p-2 shadow-inner">
+                <div id="game-grid" class="grid gap-1.5 w-full max-w-[650px] transition-all duration-200">
+                    <!-- Grid Cells -->
+                </div>
+            </div>
+            
+            <!-- Feedback Message -->
+            <div id="feedback-msg" class="h-6 mt-1 text-center text-xs font-black text-red-500 opacity-0 transition-opacity tracking-widest">
+                SAI RỒI! -3 GIÂY
+            </div>
+        </div>
+
+        <!-- Confirm Exit Modal -->
+        <div id="modal-confirm" class="hidden absolute inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-slate-800 p-6 rounded-3xl border border-white/10 shadow-2xl max-w-xs w-full text-center transform scale-100 animate-pop">
+                <div class="mx-auto w-12 h-12 bg-yellow-400/20 text-yellow-400 rounded-full flex items-center justify-center mb-4">
+                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Thoát game?</h3>
+                <p class="text-slate-400 text-sm mb-6">Tiến trình hiện tại sẽ bị mất. Bạn có chắc không?</p>
+                <div class="flex gap-3">
+                    <button onclick="resumeGame()" class="flex-1 py-3 rounded-xl font-bold bg-slate-700 hover:bg-slate-600 text-white">Chơi tiếp</button>
+                    <button onclick="quitGame()" class="flex-1 py-3 rounded-xl font-bold bg-red-500 hover:bg-red-600 text-white">Thoát</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. GAME OVER -->
+    <div id="screen-gameover" class="hidden flex-1 flex flex-col items-center justify-center p-4 bg-slate-950/95 z-[60] fixed inset-0 backdrop-blur-md">
+        <div class="bg-slate-900 rounded-3xl p-8 max-w-sm w-full text-center border border-white/10 shadow-2xl transform scale-100 transition-all" id="gameover-box">
+            <div class="flex justify-center mb-6">
+                <div class="p-6 rounded-full bg-slate-800 text-white relative shadow-inner" id="gameover-icon-bg">
+                    <i data-lucide="frown" class="w-16 h-16" id="gameover-icon"></i>
+                    <div id="new-record-badge" class="hidden absolute -top-2 -right-2 bg-yellow-500 text-slate-900 text-xs font-black px-3 py-1 rounded-full animate-bounce shadow-lg shadow-yellow-500/50">KỶ LỤC MỚI</div>
+                </div>
+            </div>
+            
+            <h2 class="text-3xl font-black mb-1 text-white uppercase" id="gameover-title">Hết giờ!</h2>
+            <p class="text-slate-400 mb-6 text-sm" id="gameover-msg">Thử lại để phá kỷ lục nhé.</p>
+
+            <div class="bg-black/40 rounded-2xl p-5 mb-6 space-y-3">
+                <div class="flex justify-between text-slate-400 text-sm font-bold">
+                    <span>Cấp độ</span>
+                    <span class="text-white text-lg" id="end-level">1</span>
+                </div>
+                <div class="flex justify-between text-slate-400 border-t border-white/10 pt-3 items-end">
+                    <span>Tổng điểm</span>
+                    <span class="font-black text-4xl text-green-400 leading-none" id="end-score">0</span>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="showScreen('welcome')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold text-slate-300 transition-colors">Menu</button>
+                <button onclick="startGame()" class="flex-[1.5] bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-900/50 border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all">
+                    <i data-lucide="refresh-cw"></i> Chơi lại
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. DASHBOARD -->
+    <div id="screen-dashboard" class="hidden flex-1 flex flex-col bg-slate-950 p-4 overflow-y-auto">
+        <div class="max-w-2xl mx-auto w-full">
+            <div class="flex items-center justify-between mb-6 sticky top-0 bg-slate-950 py-2 z-10 border-b border-white/5 pb-4">
+                <button onclick="showScreen('welcome')" class="bg-slate-900 p-3 rounded-xl hover:bg-slate-800 border border-slate-800 text-slate-300"><i data-lucide="arrow-left"></i></button>
+                <h2 class="text-2xl font-black text-yellow-400 uppercase tracking-tight flex items-center gap-2">
+                    <i data-lucide="crown" class="w-6 h-6"></i> Bảng Phong Thần
+                </h2>
+                <div class="w-10"></div>
+            </div>
+            <div class="bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-black/20 text-slate-400 text-[10px] uppercase tracking-wider">
+                        <tr>
+                            <th class="p-4 font-bold">#</th>
+                            <th class="p-4 font-bold">Đại hiệp</th>
+                            <th class="p-4 text-right font-bold">Cấp</th>
+                            <th class="p-4 text-right font-bold">Điểm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-body" class="text-sm">
+                        <!-- Render JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        // --- CONSTANTS ---
+        const AVATARS = [
+            { id: 'ice-cream', icon: 'ice-cream' }, { id: 'ghost', icon: 'ghost' }, 
+            { id: 'cat', icon: 'cat' }, { id: 'dog', icon: 'dog' }, 
+            { id: 'zap', icon: 'zap' }, { id: 'star', icon: 'star' }, 
+            { id: 'skull', icon: 'skull' }, { id: 'rocket', icon: 'rocket' }, 
+            { id: 'smile', icon: 'smile' }, { id: 'heart', icon: 'heart' }
+        ];
+
+        // 80+ Icons for massive variety
+        const ICONS = [
+            'sun', 'moon', 'cloud', 'umbrella', 'anchor', 'coffee', 'crown', 'diamond', 'music', 'heart', 
+            'smile', 'star', 'apple', 'banana', 'cherry', 'grape', 'citrus', 'car-front', 'bike', 'plane', 
+            'rocket', 'ship', 'gamepad-2', 'headphones', 'laptop', 'smartphone', 'watch', 'gift', 
+            'shopping-cart', 'wallet', 'coins', 'book', 'map', 'globe', 'key', 'lock', 'bell', 'lightbulb',
+            'flame', 'droplets', 'snowflake', 'flower', 'fish', 'bone', 'pizza', 'cake-slice', 'trophy',
+            'camera', 'video', 'mic', 'speaker', 'wifi', 'bluetooth', 'battery', 'cpu', 'database',
+            'scissors', 'paperclip', 'hammer', 'wrench', 'axe', 'shovel', 'sword', 'shield', 'award',
+            'briefcase', 'calculator', 'calendar', 'compass', 'feather', 'flag', 'glasses', 'magnet',
+            'megaphone', 'microscope', 'palette', 'printer', 'radio', 'shirt', 'ticket', 'truck'
+        ];
+
+        // Vivid Colors for Distraction
+        const COLORS = [
+            'text-red-400', 'text-orange-400', 'text-amber-400', 'text-yellow-400', 
+            'text-lime-400', 'text-green-400', 'text-emerald-400', 'text-teal-400', 
+            'text-cyan-400', 'text-sky-400', 'text-blue-400', 'text-indigo-400', 
+            'text-violet-400', 'text-purple-400', 'text-fuchsia-400', 'text-pink-400', 'text-rose-400'
+        ];
+
+        let state = {
+            screen: 'welcome',
+            users: JSON.parse(localStorage.getItem('qe4_users') || JSON.stringify([{ id: 'u0', name: 'Kem', avatarId: 'ice-cream' }])),
+            currentUser: null,
+            level: 1,
+            score: 0,
+            timeLeft: 10,
+            timerId: null,
+            target: null,
+            gridItems: [],
+            gridSize: 4,
+            history: JSON.parse(localStorage.getItem('qe4_history') || '[]'),
+            tempAvatarId: 'ice-cream',
+            isPaused: false
+        };
+        
+        // Auto select first user
+        state.currentUser = state.users[0];
+
+        // --- AUDIO ENGINE ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, dur, vol=0.1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + dur);
+        }
+
+        const SFX = {
+            click: () => playTone(800, 'sine', 0.05, 0.05),
+            correct: () => { playTone(600, 'sine', 0.1); setTimeout(() => playTone(1200, 'sine', 0.2), 50); },
+            wrong: () => { playTone(150, 'sawtooth', 0.3, 0.2); setTimeout(() => playTone(100, 'sawtooth', 0.3, 0.2), 100); },
+            gameover: () => { playTone(400, 'triangle', 0.4); setTimeout(() => playTone(300, 'triangle', 0.4), 300); setTimeout(() => playTone(200, 'triangle', 0.8), 600); },
+            win: () => { [523, 659, 783, 1046, 1318].forEach((f,i) => setTimeout(() => playTone(f, 'square', 0.3, 0.05), i*80)); }
+        };
+
+        // --- APP LOGIC ---
+
+        function init() {
+            renderUserList();
+            renderAvatarSelection();
+            lucide.createIcons();
+        }
+
+        // USER MANAGEMENT
+        function renderUserList() {
+            const list = document.getElementById('saved-users-list');
+            list.innerHTML = state.users.map(u => {
+                const isSelected = state.currentUser.id === u.id;
+                const avt = AVATARS.find(a => a.id === u.avatarId) || AVATARS[0];
+                return `
+                <div onclick="selectUser('${u.id}')" 
+                     class="flex-shrink-0 cursor-pointer flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${isSelected ? 'bg-indigo-600/30 border-yellow-400 scale-105 shadow-[0_0_15px_rgba(250,204,21,0.2)]' : 'bg-slate-800 border-slate-700 opacity-60 hover:opacity-100 hover:border-slate-500'}">
+                    <div class="p-2 rounded-xl transition-colors ${isSelected ? 'bg-yellow-400 text-slate-900' : 'bg-slate-700 text-white'}">
+                        <i data-lucide="${avt.icon}" width="20" height="20"></i>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase truncate max-w-[70px] ${isSelected ? 'text-yellow-400' : 'text-slate-400'}">${u.name}</span>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function selectUser(id) {
+            state.currentUser = state.users.find(u => u.id === id);
+            SFX.click();
+            renderUserList();
+        }
+
+        function toggleCreateUser() {
+            const list = document.getElementById('user-selection-view');
+            const form = document.getElementById('create-user-view');
+            if (form.classList.contains('hidden')) {
+                list.classList.add('hidden');
+                form.classList.remove('hidden');
+                state.tempAvatarId = 'ice-cream';
+                document.getElementById('new-user-name').value = '';
+                renderAvatarSelection();
+            } else {
+                form.classList.add('hidden');
+                list.classList.remove('hidden');
+            }
+        }
+
+        function renderAvatarSelection() {
+            const grid = document.getElementById('avatar-grid');
+            grid.innerHTML = AVATARS.map(a => `
+                <div onclick="state.tempAvatarId = '${a.id}'; renderAvatarSelection(); SFX.click()" 
+                     class="aspect-square rounded-xl flex items-center justify-center cursor-pointer border-2 transition-all ${state.tempAvatarId === a.id ? 'bg-yellow-400 border-yellow-200 text-slate-900 shadow-lg scale-110' : 'bg-slate-700 border-transparent hover:bg-slate-600'}">
+                    <i data-lucide="${a.icon}" width="20" height="20"></i>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function createNewUser() {
+            const name = document.getElementById('new-user-name').value.trim() || 'Người chơi';
+            const newUser = { id: 'u'+Date.now(), name: name, avatarId: state.tempAvatarId };
+            state.users.push(newUser);
+            state.currentUser = newUser;
+            localStorage.setItem('qe4_users', JSON.stringify(state.users));
+            toggleCreateUser();
+            renderUserList();
+            SFX.win();
+        }
+
+        // --- GAMEPLAY ---
+
+        function showScreen(id) {
+            document.querySelectorAll('body > div[id^="screen-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`screen-${id}`).classList.remove('hidden');
+            if (id === 'dashboard') renderDashboard();
+        }
+
+        function startGame() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            state.level = 1;
+            state.score = 0;
+            state.timeLeft = 10;
+            state.isPaused = false;
+            
+            // Setup UI
+            const avt = AVATARS.find(a => a.id === state.currentUser.avatarId);
+            document.getElementById('play-username').innerText = state.currentUser.name;
+            document.getElementById('play-avatar-icon').innerHTML = `<i data-lucide="${avt.icon}" width="18" height="18"></i>`;
+            
+            showScreen('playing');
+            document.getElementById('modal-confirm').classList.add('hidden');
+            generateLevel(1);
+            startTimer();
+        }
+
+        function confirmExit() {
+            state.isPaused = true;
+            document.getElementById('modal-confirm').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function resumeGame() {
+            state.isPaused = false;
+            document.getElementById('modal-confirm').classList.add('hidden');
+        }
+
+        function quitGame() {
+            clearInterval(state.timerId);
+            showScreen('welcome');
+        }
+
+        function generateLevel(lv) {
+            state.level = lv;
+            
+            // GIỚI HẠN MATRIX CỰC LỚN
+            let size = 4;
+            if (lv > 2) size = 5;
+            if (lv > 5) size = 6;
+            if (lv > 9) size = 8;
+            if (lv > 14) size = 9;
+            if (lv > 19) size = 10; // 100 cells
+            if (lv > 24) size = 11; // 121 cells
+            if (lv > 29) size = 12; // 144 cells!
+
+            state.gridSize = size;
+            const totalCells = size * size;
+
+            // Timer (càng cao càng ít)
+            const baseTime = Math.max(4, 11 - Math.floor(lv / 3.5)); 
+            state.timeLeft = baseTime;
+            updateTimerDisplay();
+
+            // Mode Logic
+            const mode = Math.floor(Math.random() * 3); // 0: Num, 1: Letter, 2: Icon
+            let items = [];
+            
+            if (mode === 0) { // NUMBER
+                const maxNum = totalCells * 6;
+                while(items.length < totalCells) {
+                    const n = Math.floor(Math.random() * maxNum) + 10;
+                    items.push({ val: n, type: 'text', id: Math.random() });
+                }
+            } else if (mode === 1) { // LETTER
+                const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+                while(items.length < totalCells) {
+                    const c = chars[Math.floor(Math.random() * chars.length)];
+                    items.push({ val: c, type: 'text', id: Math.random() });
+                }
+            } else { // ICON
+                const pool = [...ICONS].sort(() => Math.random() - 0.5);
+                for(let i=0; i<totalCells; i++) {
+                    const icon = pool[i % pool.length];
+                    items.push({ val: icon, type: 'icon', id: Math.random() });
+                }
+            }
+
+            items.sort(() => Math.random() - 0.5);
+
+            // UNIQUE TARGET LOGIC
+            // Pick a random index as target
+            const targetIdx = Math.floor(Math.random() * items.length);
+            const targetVal = items[targetIdx].val;
+            
+            // Clear duplicates
+            items = items.map((item, idx) => {
+                if (idx !== targetIdx && item.val === targetVal) {
+                    // Replace duplicate
+                    if (item.type === 'text') return { ...item, val: item.val + 'x' };
+                    if (item.type === 'icon') return { ...item, val: 'circle-slash' };
+                }
+                // Assign Random Color for Distraction (except the target, which we handle in render)
+                item.colorClass = COLORS[Math.floor(Math.random() * COLORS.length)];
+                return item;
+            });
+
+            state.target = items[targetIdx];
+            state.gridItems = items;
+
+            renderGame();
+        }
+
+        function renderGame() {
+            document.getElementById('play-level').innerText = `LV.${state.level}`;
+            document.getElementById('play-score').innerText = state.score;
+
+            // Render Target Display (Always clear and visible)
+            const targetEl = document.getElementById('target-display');
+            if (state.target.type === 'icon') {
+                targetEl.innerHTML = `<i data-lucide="${state.target.val}" width="56" height="56" class="text-indigo-600 scale-125 filter drop-shadow-lg"></i>`;
+            } else {
+                targetEl.innerHTML = `<span class="text-indigo-600 drop-shadow-md tracking-tighter">${state.target.val}</span>`;
+            }
+
+            // Render Grid
+            const gridEl = document.getElementById('game-grid');
+            gridEl.style.gridTemplateColumns = `repeat(${state.gridSize}, minmax(0, 1fr))`;
+            
+            // Dynamic text/icon sizing based on density
+            let textSize = 'text-2xl';
+            let iconSize = 24;
+            let p = 'p-0';
+            
+            if (state.gridSize > 6) { textSize = 'text-lg'; iconSize = 20; }
+            if (state.gridSize > 8) { textSize = 'text-sm'; iconSize = 16; }
+            if (state.gridSize > 10) { textSize = 'text-tiny'; iconSize = 14; }
+
+            gridEl.innerHTML = state.gridItems.map(item => {
+                const isTarget = item.id === state.target.id;
+                // Target has its own specific styling if you want, 
+                // OR we make it blend in by using random colors for EVERYONE including target.
+                // Let's use the random colors for chaos.
+                
+                const content = item.type === 'icon' 
+                    ? `<i data-lucide="${item.val}" width="${iconSize}" height="${iconSize}"></i>` 
+                    : item.val;
+                
+                return `
+                <div onclick="handleCellClick('${item.id}')" 
+                     class="aspect-square flex items-center justify-center bg-slate-700/60 hover:bg-slate-600 rounded-lg shadow-sm grid-item select-none ${textSize} ${item.colorClass}">
+                    ${content}
+                </div>`;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        function handleCellClick(id) {
+            if (state.isPaused) return;
+
+            const item = state.gridItems.find(i => String(i.id) === String(id));
+            if (!item) return;
+
+            if (item.val === state.target.val) {
+                // Correct
+                SFX.correct();
+                // Bonus for high level
+                const levelBonus = state.level * 20;
+                const timeBonus = Math.floor(state.timeLeft * 10);
+                state.score += 100 + levelBonus + timeBonus;
+                
+                const t = document.getElementById('target-display');
+                t.classList.add('pop', 'text-green-500');
+                setTimeout(() => {
+                    t.classList.remove('pop', 'text-green-500');
+                    generateLevel(state.level + 1);
+                }, 100);
+            } else {
+                // Wrong
+                SFX.wrong();
+                state.timeLeft = Math.max(0, state.timeLeft - 3);
+                updateTimerDisplay();
+                
+                const grid = document.getElementById('game-grid');
+                grid.classList.add('shake');
+                
+                const fb = document.getElementById('feedback-msg');
+                fb.classList.remove('opacity-0');
+                
+                if (state.timeLeft <= 0) gameOver();
+
+                setTimeout(() => {
+                    grid.classList.remove('shake');
+                    fb.classList.add('opacity-0');
+                }, 400);
+            }
+        }
+
+        function startTimer() {
+            if (state.timerId) clearInterval(state.timerId);
+            state.timerId = setInterval(() => {
+                if (!state.isPaused) {
+                    state.timeLeft--;
+                    updateTimerDisplay();
+                    if (state.timeLeft <= 0) gameOver();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const el = document.getElementById('play-time');
+            const bar = document.getElementById('time-bar');
+            el.innerText = state.timeLeft;
+            
+            if (state.timeLeft <= 3) {
+                el.className = "text-2xl font-mono font-black leading-none text-red-500 animate-pulse drop-shadow-md";
+                bar.className = "absolute top-0 left-0 h-1.5 w-full transition-all duration-1000 ease-linear shadow-[0_0_10px_currentColor] bg-red-500";
+            } else {
+                el.className = "text-2xl font-mono font-black leading-none text-green-400 drop-shadow-md";
+                bar.className = "absolute top-0 left-0 h-1.5 w-full transition-all duration-1000 ease-linear shadow-[0_0_10px_currentColor] bg-green-500";
+            }
+            // Trigger reflow hack for bar animation if needed, mostly CSS handled
+        }
+
+        function gameOver() {
+            clearInterval(state.timerId);
+            SFX.gameover();
+            
+            const highScore = state.history.length ? Math.max(...state.history.map(h => h.score)) : 0;
+            const isNew = state.score > highScore && state.score > 0;
+            if (isNew) SFX.win();
+
+            document.getElementById('end-level').innerText = state.level;
+            document.getElementById('end-score').innerText = state.score;
+            
+            const title = document.getElementById('gameover-title');
+            const icon = document.getElementById('gameover-icon');
+            const iconBg = document.getElementById('gameover-icon-bg');
+            const badge = document.getElementById('new-record-badge');
+            
+            if (isNew) {
+                title.innerText = "PHÁ KỶ LỤC!";
+                title.classList.add('text-yellow-400');
+                icon.setAttribute('data-lucide', 'crown');
+                iconBg.classList.replace('bg-slate-800', 'bg-yellow-400');
+                iconBg.classList.replace('text-white', 'text-slate-900');
+                badge.classList.remove('hidden');
+            } else {
+                title.innerText = "HẾT GIỜ!";
+                title.classList.remove('text-yellow-400');
+                icon.setAttribute('data-lucide', 'frown');
+                iconBg.classList.replace('bg-yellow-400', 'bg-slate-800');
+                iconBg.classList.replace('text-slate-900', 'text-white');
+                badge.classList.add('hidden');
+            }
+
+            state.history.push({ name: state.currentUser.name, avatarId: state.currentUser.avatarId, score: state.score, level: state.level });
+            state.history.sort((a,b) => b.score - a.score);
+            state.history = state.history.slice(0, 50);
+            localStorage.setItem('qe4_history', JSON.stringify(state.history));
+            
+            lucide.createIcons();
+            showScreen('gameover');
+        }
+
+        function renderDashboard() {
+            const body = document.getElementById('dashboard-body');
+            body.innerHTML = state.history.map((rec, i) => {
+                const isTop = i === 0;
+                const avt = AVATARS.find(a => a.id === rec.avatarId) || AVATARS[0];
+                return `
+                <tr class="border-b border-slate-800 ${isTop ? 'bg-yellow-900/10' : ''}">
+                    <td class="p-4 ${isTop ? 'text-yellow-400 font-bold' : 'text-slate-500'}">${i+1}</td>
+                    <td class="p-4 flex items-center gap-3">
+                        <div class="p-1 rounded ${isTop ? 'bg-yellow-400 text-slate-900' : 'bg-slate-800 text-white'}">
+                            <i data-lucide="${avt.icon}" width="16" height="16"></i>
+                        </div>
+                        <span class="font-bold text-slate-300">${rec.name}</span>
+                    </td>
+                    <td class="p-4 text-right text-slate-500 font-mono">${rec.level}</td>
+                    <td class="p-4 text-right ${isTop ? 'text-yellow-400 font-black text-lg' : 'text-green-500 font-bold'}">${rec.score}</td>
+                </tr>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
+

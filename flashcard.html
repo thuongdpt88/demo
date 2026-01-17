@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siêu Trí Nhớ Pro - Flashcard Game</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'vocab': '#10b981',
+                        'antonyms': '#f59e0b',
+                        'synonyms': '#3b82f6',
+                        'sentences': '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        .btn-push { transition: all 0.1s; }
+        .btn-push:active { transform: translateY(2px); box-shadow: none; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+            background-color: #f8fafc;
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef } = React;
+
+        // --- HỆ THỐNG ÂM THANH (Web Audio API) ---
+        const useSound = () => {
+            const [isMuted, setIsMuted] = useState(false);
+            const audioCtx = useRef(null);
+
+            const initAudio = () => {
+                if (!audioCtx.current) {
+                    audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.current.state === 'suspended') {
+                    audioCtx.current.resume();
+                }
+            };
+
+            const playNote = (freq, type, duration, volume = 0.1) => {
+                if (isMuted) return;
+                initAudio();
+                try {
+                    const osc = audioCtx.current.createOscillator();
+                    const gain = audioCtx.current.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.current.currentTime);
+                    gain.gain.setValueAtTime(volume, audioCtx.current.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.current.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.current.destination);
+                    osc.start();
+                    osc.stop(audioCtx.current.currentTime + duration);
+                } catch (e) { console.log("Audio API issue"); }
+            };
+
+            return {
+                isMuted,
+                toggleMute: () => setIsMuted(!isMuted),
+                playClick: () => playNote(600, 'triangle', 0.1, 0.05),
+                playMatch: () => {
+                    playNote(523.25, 'sine', 0.3, 0.1);
+                    setTimeout(() => playNote(659.25, 'sine', 0.4, 0.1), 100);
+                },
+                playWrong: () => {
+                    playNote(220, 'sawtooth', 0.2, 0.05);
+                    setTimeout(() => playNote(196, 'sawtooth', 0.3, 0.05), 100);
+                },
+                playWin: () => {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((f, i) => setTimeout(() => playNote(f, 'sine', 0.5, 0.1), i * 150));
+                }
+            };
+        };
+
+        // --- ICON COMPONENT ---
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const icons = {
+                Play: <path d="M5 3l14 9-14 9V3z" />,
+                RotateCcw: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>,
+                Trophy: <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></>,
+                Clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
+                Move: <><polyline points="5 9 2 12 5 15" /><polyline points="9 5 12 2 15 5" /><polyline points="19 9 22 12 19 15" /><polyline points="15 19 12 22 9 19" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="12" y1="2" x2="12" y2="22" /></>,
+                Star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />,
+                ArrowLeft: <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>,
+                Brain: <><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" /><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" /></>,
+                Type: <><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></>,
+                Shuffle: <><polyline points="16 3 21 3 21 8" /><line x1="4" y1="20" x2="21" y2="3" /><polyline points="21 16 21 21 16 21" /><line x1="15" y1="15" x2="21" y2="21" /><line x1="4" y1="4" x2="9" y2="9" /></>,
+                AlignLeft: <><line x1="21" y1="6" x2="3" y2="6" /><line x1="15" y1="12" x2="3" y2="12" /><line x1="17" y1="18" x2="3" y2="18" /></>,
+                Volume: <><path d="M11 5L6 9H2v6h4l5 4V5z" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></>,
+                VolumeMute: <><path d="M11 5L6 9H2v6h4l5 4V5z" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></>
+            };
+
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name] || <circle cx="12" cy="12" r="10" />}
+                </svg>
+            );
+        };
+
+        // --- DỮ LIỆU GAME ---
+        const GAME_MODES = {
+            vocab: { id: 'vocab', name: 'Từ Vựng', iconName: 'Type', description: 'Cặp hình/chữ giống nhau', theme: 'green', gradient: 'from-emerald-400 to-teal-500', lightBg: 'bg-emerald-50', data: {
+                easy: [{pairId:1,text1:'🍎 Apple',text2:'🍎 Apple'},{pairId:2,text1:'🍌 Banana',text2:'🍌 Banana'},{pairId:3,text1:'🐱 Cat',text2:'🐱 Cat'},{pairId:4,text1:'🐶 Dog',text2:'🐶 Dog'},{pairId:5,text1:'🌞 Sun',text2:'🌞 Sun'},{pairId:6,text1:'🌙 Moon',text2:'🌙 Moon'}],
+                medium: [{pairId:1,text1:'🚗 Car',text2:'🚗 Car'},{pairId:2,text1:'🚲 Bike',text2:'🚲 Bike'},{pairId:3,text1:'✈️ Plane',text2:'✈️ Plane'},{pairId:4,text1:'🚆 Train',text2:'🚆 Train'},{pairId:5,text1:'🏠 House',text2:'🏠 House'},{pairId:6,text1:'🏫 School',text2:'🏫 School'},{pairId:7,text1:'🏥 Hospital',text2:'🏥 Hospital'},{pairId:8,text1:'🏪 Shop',text2:'🏪 Shop'}],
+                hard: [{pairId:1,text1:'🦁 Lion',text2:'🦁 Lion'},{pairId:2,text1:'🦒 Giraffe',text2:'🦒 Giraffe'},{pairId:3,text1:'🐘 Elephant',text2:'🐘 Elephant'},{pairId:4,text1:'🦓 Zebra',text2:'🦓 Zebra'},{pairId:5,text1:'🐬 Dolphin',text2:'🐬 Dolphin'},{pairId:6,text1:'🐳 Whale',text2:'🐳 Whale'},{pairId:7,text1:'🐯 Tiger',text2:'🐯 Tiger'},{pairId:8,text1:'👨‍⚕️ Doctor',text2:'👨‍⚕️ Doctor'},{pairId:9,text1:'👮 Police',text2:'👮 Police'},{pairId:10,text1:'🎮 Game',text2:'🎮 Game'},{pairId:11,text1:'🎹 Piano',text2:'🎹 Piano'},{pairId:12,text1:'🎸 Guitar',text2:'🎸 Guitar'}]
+            }},
+            antonyms: { id: 'antonyms', name: 'Trái Nghĩa', iconName: 'Shuffle', description: 'Tìm cặp từ đối lập', theme: 'orange', gradient: 'from-orange-400 to-red-500', lightBg: 'bg-orange-50', data: {
+                easy: [{pairId:1,text1:'🔥 Hot',text2:'❄️ Cold'},{pairId:2,text1:'🐘 Big',text2:'🐜 Small'},{pairId:3,text1:'⬆️ Up',text2:'⬇️ Down'},{pairId:4,text1:'😀 Happy',text2:'😢 Sad'},{pairId:5,text1:'☀️ Day',text2:'🌑 Night'},{pairId:6,text1:'🚪 Open',text2:'🔒 Closed'}],
+                medium: [{pairId:1,text1:'🚀 Fast',text2:'🐢 Slow'},{pairId:2,text1:'👴 Old',text2:'👶 Young'},{pairId:3,text1:'🌑 Dark',text2:'💡 Light'},{pairId:4,text1:'🏋️ Strong',text2:'🥀 Weak'},{pairId:5,text1:'💰 Rich',text2:'💸 Poor'},{pairId:6,text1:'🗿 Hard',text2:'☁️ Soft'},{pairId:7,text1:'💧 Wet',text2:'🌵 Dry'},{pairId:8,text1:'✨ Clean',text2:'🗑️ Dirty'}]
+            }},
+            synonyms: { id: 'synonyms', name: 'Đồng Nghĩa', iconName: 'Brain', description: 'Tìm từ tương đương', theme: 'blue', gradient: 'from-blue-400 to-indigo-500', lightBg: 'bg-blue-50', data: {
+                easy: [{pairId:1,text1:'Start ▶️',text2:'Begin ▶️'},{pairId:2,text1:'End ⏹️',text2:'Finish 🏁'},{pairId:3,text1:'Big 🐘',text2:'Large 🐋'},{pairId:4,text1:'Small 🐜',text2:'Tiny 🦠'},{pairId:5,text1:'Happy 😀',text2:'Glad 😄'},{pairId:6,text1:'Sad 😢',text2:'Unhappy 😞'}]
+            }},
+            sentences: { id: 'sentences', name: 'Ghép Câu', iconName: 'AlignLeft', description: 'Ghép vế câu hoàn chỉnh', theme: 'pink', gradient: 'from-pink-400 to-rose-500', lightBg: 'bg-pink-50', data: {
+                easy: [{pairId:1,text1:'I am...',text2:'...a student'},{pairId:2,text1:'She is...',text2:'...happy'},{pairId:3,text1:'They are...',text2:'...playing'},{pairId:4,text1:'The sun...',text2:'...is hot'},{pairId:5,text1:'Birds can...',text2:'...fly'},{pairId:6,text1:'Fish can...',text2:'...swim'}]
+            }}
+        };
+
+        const LEVELS = {
+            easy: { id: 'easy', name: 'Dễ', grid: 'grid-cols-3 sm:grid-cols-4', time: 60, preview: 3000, color: 'text-green-600' },
+            medium: { id: 'medium', name: 'Vừa', grid: 'grid-cols-4', time: 90, preview: 4000, color: 'text-yellow-600' },
+            hard: { id: 'hard', name: 'Khó', grid: 'grid-cols-4 sm:grid-cols-6', time: 120, preview: 5000, color: 'text-red-600' },
+        };
+
+        // --- COMPONENTS ---
+        const Card = ({ card, onClick, disabled, mode, themeGradient }) => {
+            const getTextSize = (text) => {
+                if (mode === 'sentences') return 'text-[10px] sm:text-xs md:text-sm px-1 font-bold leading-tight';
+                if (text.length > 10) return 'text-xs sm:text-base font-bold';
+                return 'text-lg sm:text-2xl font-black';
+            };
+
+            return (
+                <div className={`relative cursor-pointer perspective-1000 group ${disabled ? 'cursor-default' : ''}`} onClick={() => !disabled && onClick(card)}>
+                    <div className={`relative w-full aspect-[3/4] rounded-2xl card-shadow transition-all duration-500 transform-style-3d ${card.isFlipped || card.isMatched ? 'rotate-y-180' : ''}`}>
+                        {/* Back face */}
+                        <div className={`absolute w-full h-full backface-hidden rounded-2xl flex items-center justify-center bg-gradient-to-br ${themeGradient} border-2 border-white/30 shadow-inner`}>
+                            <Icon name="Star" className="text-white/40 w-10 h-10 animate-pulse" />
+                        </div>
+                        {/* Front face */}
+                        <div className={`absolute w-full h-full backface-hidden rotate-y-180 rounded-2xl flex items-center justify-center text-center border-[4px] p-2 ${card.isMatched ? 'bg-green-50 border-green-400 text-green-700 shadow-lg' : 'bg-white border-white text-slate-800'}`}>
+                            <span className={`select-none ${getTextSize(card.content)}`}>{card.content}</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+        function MemoryGame() {
+            const { isMuted, toggleMute, playClick, playMatch, playWrong, playWin } = useSound();
+            const [appState, setAppState] = useState('mode_select');
+            const [selectedMode, setSelectedMode] = useState(null);
+            const [selectedLevel, setSelectedLevel] = useState(null);
+            const [cards, setCards] = useState([]);
+            const [flippedCards, setFlippedCards] = useState([]);
+            const [moves, setMoves] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(0);
+            const [isPreviewing, setIsPreviewing] = useState(false);
+            const [matchedPairs, setMatchedPairs] = useState(0);
+
+            // Reset Game & Exit (Critical Fix)
+            const handleReset = useCallback(() => {
+                setAppState('mode_select');
+                setSelectedMode(null);
+                setSelectedLevel(null);
+                setCards([]);
+                setFlippedCards([]);
+                setMoves(0);
+                setMatchedPairs(0);
+                setTimeLeft(0);
+                setIsPreviewing(false);
+            }, []);
+
+            const startGame = (levelId) => {
+                const levelConfig = LEVELS[levelId];
+                setSelectedLevel(levelId);
+                const rawData = GAME_MODES[selectedMode].data[levelId];
+                
+                let deck = [];
+                rawData.forEach(pair => {
+                    deck.push({ id: `p${pair.pairId}-1`, pairId: pair.pairId, content: pair.text1, isFlipped: true, isMatched: false });
+                    deck.push({ id: `p${pair.pairId}-2`, pairId: pair.pairId, content: pair.text2, isFlipped: true, isMatched: false });
+                });
+
+                setCards(deck.sort(() => Math.random() - 0.5));
+                setMoves(0);
+                setMatchedPairs(0);
+                setTimeLeft(levelConfig.time);
+                setIsPreviewing(true);
+                setFlippedCards([]);
+                setAppState('playing');
+                
+                setTimeout(() => {
+                    setCards(prev => prev.map(c => ({ ...c, isFlipped: false })));
+                    setIsPreviewing(false);
+                }, levelConfig.preview);
+            };
+
+            useEffect(() => {
+                if (appState !== 'playing' || isPreviewing) return;
+                if (timeLeft <= 0) { 
+                    setAppState('lost'); 
+                    return; 
+                }
+                const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                return () => clearInterval(timer);
+            }, [timeLeft, appState, isPreviewing]);
+
+            const handleCardClick = (clickedCard) => {
+                if (isPreviewing || flippedCards.length >= 2 || clickedCard.isFlipped || clickedCard.isMatched) return;
+                
+                playClick();
+                const updatedCards = cards.map(c => c.id === clickedCard.id ? { ...c, isFlipped: true } : c);
+                setCards(updatedCards);
+                const newFlipped = [...flippedCards, clickedCard];
+                setFlippedCards(newFlipped);
+
+                if (newFlipped.length === 2) {
+                    setMoves(p => p + 1);
+                    if (newFlipped[0].pairId === newFlipped[1].pairId) {
+                        setTimeout(() => {
+                            playMatch();
+                            setCards(p => p.map(c => c.pairId === newFlipped[0].pairId ? { ...c, isMatched: true } : c));
+                            setFlippedCards([]);
+                            setMatchedPairs(p => {
+                                const count = p + 1;
+                                if (count === GAME_MODES[selectedMode].data[selectedLevel].length) {
+                                    playWin();
+                                    setAppState('won');
+                                }
+                                return count;
+                            });
+                        }, 500);
+                    } else {
+                        setTimeout(() => {
+                            playWrong();
+                            setCards(p => p.map(c => c.id === newFlipped[0].id || c.id === newFlipped[1].id ? { ...c, isFlipped: false } : c));
+                            setFlippedCards([]);
+                        }, 1000);
+                    }
+                }
+            };
+
+            // Screens
+            if (appState === 'mode_select') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-indigo-700 to-violet-950 flex flex-col items-center justify-center p-6 text-white text-center">
+                        <div className="text-center animate-in mb-10">
+                            <div className="mb-4 inline-block p-6 bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20">
+                                <Icon name="Brain" size={80} className="text-yellow-300 drop-shadow-lg" />
+                            </div>
+                            <h1 className="text-5xl sm:text-7xl font-black tracking-tight drop-shadow-2xl">Siêu Trí Nhớ <span className="text-yellow-300">PRO</span></h1>
+                            <p className="text-indigo-200 mt-4 text-xl font-semibold italic">Luyện não bộ - Ghép cặp bài học</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl w-full">
+                            {Object.values(GAME_MODES).map(m => (
+                                <button key={m.id} onClick={() => { setSelectedMode(m.id); setAppState('level_select'); playClick(); }} className="bg-white group p-8 rounded-[2.5rem] shadow-2xl hover:-translate-y-2 transition-all duration-300 btn-push flex flex-col items-center text-center relative overflow-hidden border-b-8 border-slate-200">
+                                    <div className={`bg-gradient-to-br ${m.gradient} p-6 rounded-2xl mb-6 shadow-xl transform group-hover:scale-110 transition-transform`}><Icon name={m.iconName} className="text-white" size={40} /></div>
+                                    <h3 className="text-2xl font-black mb-2 text-slate-800 uppercase tracking-tight">{m.name}</h3>
+                                    <p className="text-sm text-slate-500 font-bold">{m.description}</p>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-12">
+                            <button onClick={toggleMute} className="flex items-center gap-3 bg-white/10 px-8 py-4 rounded-3xl backdrop-blur-md border border-white/10 transition-all active:scale-95 shadow-lg">
+                                <Icon name={isMuted ? "VolumeMute" : "Volume"} size={28} /> <span className="font-black uppercase tracking-widest">{isMuted ? "Tắt" : "Bật"}</span>
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (appState === 'level_select') {
+                const theme = GAME_MODES[selectedMode];
+                return (
+                    <div className={`min-h-screen bg-gradient-to-br ${theme.gradient} flex flex-col items-center justify-center p-6`}>
+                        <div className="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] relative animate-in border-[6px] border-white text-center">
+                            <button onClick={handleReset} className="absolute top-6 left-6 p-3 text-slate-400 hover:text-slate-800 bg-slate-100 rounded-2xl transition-all active:scale-90"><Icon name="ArrowLeft" /></button>
+                            <div className={`mx-auto mb-8 w-24 h-24 rounded-3xl bg-gradient-to-br ${theme.gradient} flex items-center justify-center shadow-2xl rotate-3`}><Icon name={theme.iconName} size={48} className="text-white" /></div>
+                            <h2 className={`text-3xl font-black mb-10 text-center text-transparent bg-clip-text bg-gradient-to-r ${theme.gradient}`}>{theme.name}</h2>
+                            <div className="space-y-4">
+                                {Object.values(LEVELS).map(l => (
+                                    <button key={l.id} onClick={() => { startGame(l.id); playClick(); }} className="w-full flex items-center justify-between bg-white hover:bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 hover:border-slate-300 shadow-md btn-push">
+                                        <div className="text-left"><span className={`block font-black text-2xl ${l.color}`}>{l.name}</span><span className="text-sm text-slate-400 font-black uppercase tracking-wider">{theme.data[l.id]?.length || 0} Cặp • {l.time}s</span></div>
+                                        <div className="bg-slate-50 p-4 rounded-full shadow-inner"><Icon name="Play" size={28} className="text-indigo-600 fill-current" /></div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const theme = GAME_MODES[selectedMode];
+            return (
+                <div className={`min-h-screen ${theme.lightBg} flex flex-col items-center pb-12`}>
+                    {/* Header */}
+                    <div className="w-full bg-white/90 backdrop-blur-2xl shadow-xl p-4 sticky top-0 z-20 border-b-2 border-slate-100">
+                        <div className="max-w-6xl mx-auto flex justify-between items-center px-2">
+                            <button onClick={() => setAppState('level_select')} className="p-4 rounded-2xl hover:bg-slate-100 text-slate-600 transition-all active:scale-90"><Icon name="ArrowLeft" size={28} /></button>
+                            <div className="flex gap-4 md:gap-12 bg-slate-900 px-8 py-4 rounded-[2rem] items-center shadow-2xl border-b-4 border-black text-white">
+                                <div className={`flex items-center gap-3 font-black ${timeLeft < 10 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+                                    <Icon name="Clock" size={24} /> <span className="text-3xl font-mono">{timeLeft}</span>
+                                </div>
+                                <div className="hidden sm:flex items-center gap-3 font-black text-indigo-400">
+                                    <Icon name="Move" size={24} /> <span className="text-3xl font-mono">{moves}</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={toggleMute} className="p-4 rounded-2xl hover:bg-slate-100 text-slate-600 transition-all"><Icon name={isMuted ? "VolumeMute" : "Volume"} size={28} /></button>
+                                <button onClick={() => startGame(selectedLevel)} className="p-4 rounded-2xl hover:bg-indigo-100 text-indigo-600 transition-all"><Icon name="RotateCcw" size={28} /></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Board */}
+                    <div className="flex-1 w-full max-w-6xl px-4 mt-10 flex flex-col items-center">
+                        {isPreviewing && (
+                            <div className="mb-8 px-12 py-5 bg-yellow-400 text-yellow-950 rounded-[1.5rem] text-xl font-black animate-bounce shadow-2xl flex items-center gap-4 border-b-8 border-yellow-600">
+                                <Icon name="Star" size={28} /> GHI NHỚ VỊ TRÍ!
+                            </div>
+                        )}
+                        <div className={`grid gap-4 md:gap-8 w-full max-w-5xl mx-auto ${LEVELS[selectedLevel].grid}`}>
+                            {cards.map(c => <Card key={c.id} card={c} onClick={handleCardClick} disabled={isPreviewing} mode={selectedMode} themeGradient={theme.gradient} />)}
+                        </div>
+                    </div>
+
+                    {/* Result Modal */}
+                    {(appState === 'won' || appState === 'lost') && (
+                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-2xl flex items-center justify-center z-50 p-6 animate-in">
+                            <div className="bg-white rounded-[4rem] p-12 max-w-md w-full shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] text-center border-b-[10px] border-slate-200">
+                                <div className={`mx-auto w-28 h-28 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl transform -rotate-12 ${appState==='won'?'bg-yellow-400 text-white':'bg-red-500 text-white'}`}>
+                                    <Icon name={appState==='won'?'Trophy':'Clock'} size={64} className="drop-shadow-lg" />
+                                </div>
+                                <h2 className="text-5xl font-black mb-4 tracking-tighter text-slate-900 uppercase">{appState === 'won' ? 'QUÁ ĐỈNH!' : 'HẾT GIỜ!'}</h2>
+                                <p className="text-slate-500 mb-12 font-black leading-tight text-lg">{appState === 'won' ? 'Trí nhớ của bạn thật phi thường.' : 'Đừng vội bỏ cuộc, tập luyện giúp não khỏe hơn!'}</p>
+                                <div className="space-y-4">
+                                    <button onClick={() => startGame(selectedLevel)} className={`w-full py-6 bg-gradient-to-r ${theme.gradient} text-white rounded-[2rem] font-black shadow-2xl hover:shadow-3xl hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest text-xl`}>Thử Lại</button>
+                                    <button onClick={handleReset} className="w-full py-6 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-[2rem] font-black transition-all active:scale-95 uppercase tracking-widest text-lg">Về Menu Chính</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MemoryGame />);
+    </script>
+</body>
+</html>
+
+

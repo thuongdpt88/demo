@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rung Chuông Vàng Kids Pro V7</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Baloo 2', cursive;
+            background-color: #f0f9ff;
+            background-image: radial-gradient(#bae6fd 1px, transparent 1px);
+            background-size: 20px 20px;
+            overscroll-behavior: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+            border: 4px solid #fff;
+        }
+        .btn-3d { transition: all 0.1s; border-bottom-width: 5px; position: relative; }
+        .btn-3d:active { transform: translateY(4px); border-bottom-width: 1px; }
+        
+        .avatar-option { transition: transform 0.2s; }
+        .avatar-option:hover { transform: scale(1.15); }
+        .avatar-selected { border: 4px solid #FBBF24; border-radius: 50%; background-color: #FFFBEB; transform: scale(1.2); }
+        @keyframes ring { 0%,100%{transform:rotate(0)} 10%,30%,50%,70%,90%{transform:rotate(15deg)} 20%,40%,60%,80%{transform:rotate(-15deg)} }
+        .bell-ringing { animation: ring 2s ease infinite; }
+        .correct-anim { background-color: #86efac !important; border-color: #22c55e !important; transform: scale(1.02); }
+        .wrong-anim { background-color: #fca5a5 !important; border-color: #ef4444 !important; animation: shake 0.5s; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+        
+        .perspective { perspective: 1000px; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card-front { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+        .card-back { background-color: white; transform: rotateY(180deg); flex-direction: column; }
+    </style>
+</head>
+<body class="h-screen flex flex-col items-center justify-center p-3 selection:bg-yellow-200 overflow-hidden">
+
+    <div class="fixed top-2 z-10 pointer-events-none">
+        <div class="bg-white px-5 py-1.5 rounded-full shadow-xl border-b-4 border-yellow-400 flex items-center gap-3">
+            <i class="fa-solid fa-bell text-yellow-500 text-2xl bell-ringing"></i>
+            <h1 class="text-xl font-bold text-yellow-600 tracking-wider">RUNG CHUÔNG VÀNG</h1>
+        </div>
+    </div>
+
+    <div id="app" class="w-full max-w-lg relative z-0 mt-12 h-full max-h-[850px] flex flex-col pb-safe">
+        
+        <!-- 1. LOGIN -->
+        <div id="screen-user" class="glass-panel p-5 flex flex-col h-full overflow-hidden">
+            <h2 class="text-xl font-bold text-blue-600 text-center mb-2">Ai đang chơi đấy nhỉ?</h2>
+            <div id="user-list" class="flex-grow overflow-y-auto space-y-3 p-1 mb-2"></div>
+            <div class="flex-shrink-0 pt-2 border-t border-dashed border-gray-300">
+                <h3 class="text-sm font-bold text-gray-400 mb-2 text-center uppercase">Tạo người chơi mới</h3>
+                <div class="flex justify-center gap-4 mb-3 overflow-x-auto pb-2 px-1" id="avatar-selector"></div>
+                <div class="flex flex-col gap-3">
+                    <input type="text" id="new-username" placeholder="Nhập tên bé..." class="w-full p-3 rounded-xl border-2 border-blue-200 font-bold text-blue-800 text-center text-lg focus:outline-none focus:border-blue-500">
+                    <button onclick="handleUserAction()" id="btn-create-user" class="btn-3d w-full bg-green-500 border-green-700 text-white font-bold py-3 rounded-xl text-lg shadow-lg">
+                        <i class="fa-solid fa-play mr-2"></i> Bắt đầu ngay
+                    </button>
+                    <button onclick="cancelEdit()" id="btn-cancel-edit" class="hidden text-gray-400 font-bold text-sm">Hủy bỏ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MENU -->
+        <div id="screen-topic" class="glass-panel p-5 hidden flex flex-col gap-3 h-full">
+            <div class="flex justify-between items-center bg-blue-50 p-3 rounded-2xl border-2 border-blue-100">
+                <div class="flex items-center gap-3">
+                    <div id="display-avatar" class="text-4xl bg-white p-1 rounded-full shadow-sm"></div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">Xin chào,</p>
+                        <p id="display-username" class="text-xl font-black text-blue-600 leading-none truncate max-w-[140px]"></p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="showDashboard()" class="bg-yellow-400 text-white w-10 h-10 rounded-full shadow-md flex items-center justify-center border-b-4 border-yellow-600 active:border-b-0 active:translate-y-1"><i class="fa-solid fa-chart-pie"></i></button>
+                    <button onclick="logout()" class="bg-gray-200 text-gray-500 w-10 h-10 rounded-full shadow-md flex items-center justify-center border-b-4 border-gray-400 active:border-b-0 active:translate-y-1"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </div>
+            <div class="flex-grow flex flex-col gap-2 overflow-hidden">
+                <div onclick="showMemoryDifficultyModal()" class="cursor-pointer bg-gradient-to-r from-teal-400 to-emerald-500 p-3 rounded-2xl shadow-lg border-b-4 border-teal-700 active:border-b-0 active:translate-y-1 flex items-center gap-3 text-white shrink-0 mt-1">
+                    <div class="bg-white/20 p-2 rounded-full h-14 w-14 flex items-center justify-center text-3xl">🧠</div>
+                    <div class="flex-grow"><h3 class="text-lg font-black uppercase">Siêu Trí Nhớ</h3><p class="text-xs opacity-90">Luyện não & Từ vựng</p></div>
+                    <i class="fa-solid fa-play text-xl opacity-50 mr-2"></i>
+                </div>
+                <div class="relative py-2"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div><div class="relative flex justify-center"><span class="bg-white px-2 text-xs font-bold text-gray-400 uppercase">Hoặc thi đấu Quiz</span></div></div>
+                <div class="grid grid-cols-2 gap-3 overflow-y-auto pb-2">
+                    <button onclick="startGame('toan')" class="btn-3d bg-blue-500 border-blue-700 text-white p-3 rounded-2xl flex flex-col items-center justify-center h-20"><i class="fa-solid fa-calculator text-2xl"></i><span class="font-bold text-sm">Toán Học</span></button>
+                    <button onclick="startGame('tiengviet')" class="btn-3d bg-red-500 border-red-700 text-white p-3 rounded-2xl flex flex-col items-center justify-center h-20"><i class="fa-solid fa-book text-2xl"></i><span class="font-bold text-sm">Tiếng Việt</span></button>
+                    <button onclick="startGame('tienganh')" class="btn-3d bg-purple-500 border-purple-700 text-white p-3 rounded-2xl flex flex-col items-center justify-center h-20"><i class="fa-solid fa-language text-2xl"></i><span class="font-bold text-sm">Tiếng Anh</span></button>
+                    <button onclick="startGame('tunhien')" class="btn-3d bg-green-500 border-green-700 text-white p-3 rounded-2xl flex flex-col items-center justify-center h-20"><i class="fa-solid fa-leaf text-2xl"></i><span class="font-bold text-sm">Thế Giới</span></button>
+                    <button onclick="startGame('logic')" class="btn-3d bg-orange-500 border-orange-700 text-white p-3 rounded-2xl flex flex-col items-center justify-center h-20"><i class="fa-solid fa-puzzle-piece text-2xl"></i><span class="font-bold text-sm">Tư Duy</span></button>
+                    <button onclick="startGame('tonghop')" class="btn-3d bg-indigo-500 border-indigo-700 text-white p-3 rounded-2xl flex flex-col items-center justify-center h-20"><i class="fa-solid fa-star text-2xl"></i><span class="font-bold text-sm">Tổng Hợp</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. QUIZ SCREEN -->
+        <div id="screen-game" class="glass-panel p-4 hidden flex flex-col h-full relative">
+            <div class="flex justify-between items-center mb-2 gap-2">
+                <button onclick="showExitModal()" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-xs border border-blue-200">
+                    <span id="game-topic-name">Toán</span> <span class="mx-1 text-blue-300">|</span> <span id="question-counter">1/15</span>
+                </div>
+                <div class="text-2xl font-black text-yellow-500 flex items-center gap-1"><span id="score">0</span><i class="fa-solid fa-star"></i></div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden"><div id="timer-bar" class="bg-green-500 h-3 rounded-full transition-all duration-1000 ease-linear w-full"></div></div>
+            <div class="flex-grow flex flex-col justify-center items-center text-center mb-4 relative px-1">
+                 <div id="question-image" class="text-6xl mb-4 animate-bounce hidden"></div>
+                 <h2 id="question-text" class="text-2xl font-bold text-gray-800 leading-snug">Câu hỏi?</h2>
+            </div>
+            <div id="answers-container" class="grid grid-cols-1 gap-2 pb-1"></div>
+        </div>
+
+        <!-- 4. MEMORY SCREEN (Added Timer) -->
+        <div id="screen-memory" class="glass-panel p-4 hidden flex flex-col h-full relative">
+            <div class="flex justify-between items-center mb-1">
+                <button onclick="showExitModal('memory')" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                <div class="text-center">
+                    <div class="text-xs font-bold text-gray-400 uppercase" id="memory-level-display">ĐỘ KHÓ</div>
+                    <div class="text-lg font-black text-teal-600">Siêu Trí Nhớ</div>
+                </div>
+                <div class="w-9 h-9 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 font-bold text-sm"><span id="memory-moves">0</span></div>
+            </div>
+            
+            <!-- Memory Timer Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-3 overflow-hidden">
+                <div id="memory-timer-bar" class="bg-teal-500 h-2 rounded-full transition-all duration-1000 ease-linear w-full"></div>
+            </div>
+
+            <div id="memory-grid" class="grid gap-2 flex-grow content-center justify-center"></div>
+        </div>
+
+        <!-- 5. RESULT SCREEN -->
+        <div id="screen-result" class="glass-panel p-6 hidden flex flex-col items-center justify-center h-full text-center">
+            <div id="result-icon" class="text-8xl mb-4 animate-bounce">🎉</div>
+            <h2 id="result-title" class="text-3xl font-bold text-yellow-500 mb-2">Tuyệt vời!</h2>
+            <div class="bg-yellow-50 w-full rounded-2xl p-6 border-2 border-yellow-200 mb-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">🏆</div>
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Tổng điểm</p>
+                <div class="text-6xl font-black text-blue-600 mt-2" id="final-score">100</div>
+                <div class="text-sm text-gray-500 mt-2 font-bold italic" id="result-feedback"></div>
+            </div>
+            <div class="flex flex-col gap-3 w-full">
+                <button onclick="backToTopics()" class="btn-3d bg-blue-500 border-blue-700 text-white font-bold py-3 rounded-xl text-lg"><i class="fa-solid fa-rotate-right mr-2"></i> Chơi lại</button>
+                <button onclick="showDashboard()" class="btn-3d bg-pink-500 border-pink-700 text-white font-bold py-3 rounded-xl text-lg"><i class="fa-solid fa-trophy mr-2"></i> Xếp hạng</button>
+            </div>
+        </div>
+
+        <!-- 6. DASHBOARD -->
+        <div id="screen-dashboard" class="glass-panel p-4 hidden h-full flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-gray-700"><i class="fa-solid fa-chart-line text-blue-500"></i> Bảng Thành Tích</h2>
+                <button onclick="backToTopics()" class="text-gray-500 bg-gray-100 rounded-full w-9 h-9 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+            </div>
+            <div class="flex bg-gray-100 rounded-xl p-1 mb-4 shadow-inner">
+                <button onclick="switchTab('chart')" id="tab-chart" class="flex-1 py-2 rounded-lg text-xs font-bold transition">Biểu đồ</button>
+                <button onclick="switchTab('rank')" id="tab-rank" class="flex-1 py-2 rounded-lg text-xs font-bold transition">Xếp hạng</button>
+                <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-2 rounded-lg text-xs font-bold transition">Lịch sử</button>
+            </div>
+            <div class="flex-grow overflow-y-auto relative px-1">
+                <div id="content-chart" class="h-full flex flex-col items-center justify-center">
+                    <p class="text-center text-gray-500 text-sm mb-2">Năng lực của <span id="chart-username" class="font-bold text-blue-600"></span></p>
+                    <div class="w-full h-72 relative"><canvas id="performanceChart"></canvas></div>
+                </div>
+                <div id="content-rank" class="hidden h-full">
+                    <div class="flex gap-2 mb-3 overflow-x-auto pb-2 scrollbar-hide" id="rank-filters"></div>
+                    <table class="w-full text-left bg-white rounded-xl shadow-sm border border-gray-100"><tbody id="rank-list" class="text-gray-700 text-sm font-bold divide-y"></tbody></table>
+                </div>
+                <div id="content-history" class="hidden"><table class="w-full text-left border-collapse"><tbody id="history-list" class="text-gray-700 text-sm"></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modal-exit" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full shadow-2xl border-4 border-yellow-400">
+            <i class="fa-solid fa-face-sad-tear text-5xl text-yellow-500 mb-4"></i>
+            <h3 class="text-xl font-bold text-gray-700 mb-2">Con muốn dừng chơi hả?</h3>
+            <div class="flex gap-3 justify-center mt-6">
+                 <button onclick="closeExitModal()" class="flex-1 py-3 rounded-xl bg-gray-200 text-gray-700 font-bold">Không nha</button>
+                 <button onclick="realExitGame()" class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold border-b-4 border-red-700 active:border-b-0 active:translate-y-1">Dừng lại</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-memory-level" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-6 text-center max-w-sm w-full shadow-2xl border-4 border-teal-500">
+            <h3 class="text-2xl font-black text-teal-600 mb-4 uppercase">Chọn độ khó</h3>
+            <div class="flex flex-col gap-3">
+                <button onclick="startMemoryGame('easy')" class="btn-3d w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg border-green-700 flex justify-between px-6">
+                    <span>🐣 Dễ</span> <span class="text-green-100 text-sm mt-1">30 giây</span>
+                </button>
+                <button onclick="startMemoryGame('medium')" class="btn-3d w-full bg-blue-500 text-white py-4 rounded-2xl font-bold text-lg border-blue-700 flex justify-between px-6">
+                    <span>🐰 Vừa</span> <span class="text-blue-100 text-sm mt-1">60 giây</span>
+                </button>
+                <button onclick="startMemoryGame('hard')" class="btn-3d w-full bg-red-500 text-white py-4 rounded-2xl font-bold text-lg border-red-700 flex justify-between px-6">
+                    <span>🦁 Khó</span> <span class="text-red-100 text-sm mt-1">120 giây</span>
+                </button>
+            </div>
+            <button onclick="document.getElementById('modal-memory-level').classList.add('hidden')" class="mt-4 text-gray-400 font-bold">Quay lại</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq,type,dur,vol=0.1) {
+            if(audioCtx.state==='suspended') audioCtx.resume();
+            const osc=audioCtx.createOscillator(); const g=audioCtx.createGain();
+            osc.type=type; osc.frequency.setValueAtTime(freq,audioCtx.currentTime);
+            g.gain.setValueAtTime(vol,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
+            osc.connect(g); g.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime+dur);
+        }
+        const sfx = {
+            click:()=>playTone(400,'triangle',0.05), correct:()=>{playTone(600,'sine',0.1);setTimeout(()=>playTone(1200,'sine',0.2),100)},
+            wrong:()=>{playTone(200,'sawtooth',0.3);setTimeout(()=>playTone(150,'sawtooth',0.3),150)},
+            flip:()=>playTone(300,'sine',0.05), match:()=>{playTone(800,'sine',0.1);setTimeout(()=>playTone(1500,'sine',0.2),150)},
+            win:()=>{playTone(500,'square',0.1);setTimeout(()=>playTone(700,'square',0.1),100);setTimeout(()=>playTone(900,'square',0.4),200)}
+        };
+
+        const genMath = (count) => {
+            const arr=[];
+            for(let i=0;i<count;i++){
+                const type = Math.random();
+                if(type<0.3){ 
+                    const a=Math.floor(Math.random()*10), b=Math.floor(Math.random()*10);
+                    arr.push({q:`${a} + ${b} = ?`, a:[`${a+b}`,`${a+b+1}`,`${Math.abs(a+b-1)}`,`${a+b+2}`].sort(()=>0.5-Math.random()), c:0, correctVal:`${a+b}`, icon:'➕'});
+                } else if(type<0.6){
+                    const a=Math.floor(Math.random()*10)+5, b=Math.floor(Math.random()*5);
+                    arr.push({q:`${a} - ${b} = ?`, a:[`${a-b}`,`${a-b+1}`,`${a-b-1}`,`${a-b+2}`].sort(()=>0.5-Math.random()), c:0, correctVal:`${a-b}`, icon:'➖'});
+                } else {
+                    const a=Math.floor(Math.random()*20), b=Math.floor(Math.random()*20);
+                    if(a==b){ i--; continue; }
+                    const ans = a>b ? [`${a}`, `${b}`] : [`${b}`, `${a}`];
+                    arr.push({q:`Số nào lớn hơn?`, a:ans, c:0, correctVal: Math.max(a,b)+"", icon:`${a}..${b}`});
+                }
+            }
+            arr.forEach(x => { x.c = x.a.indexOf(x.correctVal); });
+            return arr;
+        };
+
+        const staticQ = {
+            tiengviet: [
+                {q:"Con gì kêu 'Meo meo'?",a:["Mèo","Chó","Gà","Lợn"],c:0,icon:"🐱"},{q:"Con gì giữ nhà?",a:["Chó","Mèo","Chuột","Chim"],c:0,icon:"🐶"},{q:"Từ nào viết đúng?",a:["Xinh xắn","Xinh sắn","Sinh xắn","Sinh sắn"],c:0},
+                {q:"'Ăn quả nhớ kẻ trồng...'",a:["cây","hoa","lá","rừng"],c:0,icon:"🌳"},{q:"Ba còn gọi là gì?",a:["Bố","Mẹ","Ông","Chú"],c:0},{q:"Mẹ của mẹ gọi là?",a:["Bà ngoại","Bà nội","Dì","Cô"],c:0,icon:"👵"},
+                {q:"Trái gì vỏ đỏ ruột trắng hạt đen?",a:["Dưa hấu","Táo","Ổi","Cam"],c:0,icon:"🍉"},{q:"Con vịt kêu thế nào?",a:["Cạp cạp","Gâu gâu","Meo meo","Ò ó o"],c:0,icon:"🦆"},
+                {q:"Chữ cái đầu tiên?",a:["A","B","C","D"],c:0},{q:"Điền từ: 'Lá lành đùm lá...'",a:["rách","nát","héo","tươi"],c:0},{q:"Con gà trống kêu?",a:["Ò ó o","Cục tác","Chiếp chiếp","Quác quác"],c:0,icon:"🐓"},
+                {q:"'Chị ngã em...'",a:["nâng","đỡ","cười","khóc"],c:0},{q:"Quả gì cay?",a:["Ớt","Chanh","Đường","Muối"],c:0,icon:"🌶️"},{q:"Từ trái nghĩa với 'Cao'?",a:["Thấp","Dài","To","Béo"],c:0},
+                {q:"Con trâu có mấy chân?",a:["4","2","6","8"],c:0,icon:"🐃"},{q:"'Học thầy không tày học...'",a:["bạn","cha","mẹ","anh"],c:0},{q:"Bánh chưng hình gì?",a:["Vuông","Tròn","Tam giác","Chữ nhật"],c:0,icon:"🟩"},
+                {q:"Ông mặt trời màu gì?",a:["Đỏ/Vàng","Xanh","Tím","Đen"],c:0,icon:"☀️"},{q:"Con gì biết bay?",a:["Chim","Cá","Chó","Mèo"],c:0,icon:"🐦"},{q:"Xe đạp có mấy bánh?",a:["2","3","4","1"],c:0,icon:"🚲"},
+                {q:"Mùa nào nóng nhất?",a:["Hè","Thu","Đông","Xuân"],c:0,icon:"☀️"},{q:"Em trai của bố gọi là?",a:["Chú","Bác","Cậu","Dượng"],c:0},{q:"Chị gái của mẹ gọi là?",a:["Bác","Dì","Cô","Mợ"],c:0},
+                {q:"Cái gì dùng để viết?",a:["Bút","Thước","Tẩy","Sách"],c:0,icon:"✏️"},{q:"Cái gì dùng để đội đầu?",a:["Mũ","Giày","Áo","Quần"],c:0,icon:"🧢"},
+                {q:"Con gì ăn cỏ?",a:["Bò","Hổ","Chó","Mèo"],c:0,icon:"🐄"},{q:"Con gì sống dưới nước?",a:["Cá","Chim","Gà","Khỉ"],c:0,icon:"🐟"},{q:"Bông hoa màu gì?",a:["Đỏ","Đen","Xám","Nâu"],c:0,icon:"🌹"},
+                {q:"Quả chuối màu gì?",a:["Vàng","Đỏ","Tím","Lam"],c:0,icon:"🍌"},{q:"Cây tre có đốt không?",a:["Có","Không"],c:0,icon:"🎍"}
+            ],
+            tienganh: [
+                {q:"Hello nghĩa là?",a:["Xin chào","Tạm biệt","Cảm ơn","Xin lỗi"],c:0},{q:"Cat là con gì?",a:["Mèo","Chó","Lợn","Gà"],c:0,icon:"🐱"},{q:"Dog là con gì?",a:["Chó","Mèo","Hổ","Sư tử"],c:0,icon:"🐕"},
+                {q:"Apple là quả gì?",a:["Táo","Cam","Chuối","Nho"],c:0,icon:"🍎"},{q:"Red là màu gì?",a:["Đỏ","Xanh","Vàng","Tím"],c:0,icon:"🟥"},{q:"One là số mấy?",a:["1","2","3","4"],c:0,icon:"1️⃣"},
+                {q:"Thank you là?",a:["Cảm ơn","Xin chào","Xin lỗi","Tạm biệt"],c:0},{q:"Goodbye là?",a:["Tạm biệt","Xin chào","Ngủ ngon","Cảm ơn"],c:0},{q:"Blue là màu gì?",a:["Xanh dương","Đỏ","Vàng","Cam"],c:0,icon:"🟦"},
+                {q:"Banana là quả gì?",a:["Chuối","Táo","Dưa","Ổi"],c:0,icon:"🍌"},{q:"Pig là con gì?",a:["Lợn","Gà","Vịt","Bò"],c:0,icon:"🐷"},{q:"Chicken là con gì?",a:["Gà","Vịt","Ngỗng","Chim"],c:0,icon:"🐔"},
+                {q:"Father là ai?",a:["Bố","Mẹ","Anh","Chị"],c:0,icon:"👨"},{q:"Mother là ai?",a:["Mẹ","Bố","Bà","Ông"],c:0,icon:"👩"},{q:"Car là cái gì?",a:["Ô tô","Xe máy","Xe đạp","Máy bay"],c:0,icon:"🚗"},
+                {q:"Ball là cái gì?",a:["Quả bóng","Búp bê","Cái ghế","Cái bàn"],c:0,icon:"⚽"},{q:"Book là cái gì?",a:["Sách","Bút","Vở","Thước"],c:0,icon:"📖"},{q:"Pen là cái gì?",a:["Bút mực","Bút chì","Tẩy","Thước"],c:0,icon:"🖊️"},
+                {q:"School là đâu?",a:["Trường học","Bệnh viện","Công viên","Nhà"],c:0,icon:"🏫"},{q:"Teacher là ai?",a:["Giáo viên","Bác sĩ","Công an","Nông dân"],c:0,icon:"👩‍🏫"},{q:"Doctor là ai?",a:["Bác sĩ","Y tá","Giáo viên","Ca sĩ"],c:0,icon:"👨‍⚕️"},
+                {q:"Eye là gì?",a:["Mắt","Mũi","Miệng","Tai"],c:0,icon:"👀"},{q:"Nose là gì?",a:["Mũi","Mắt","Miệng","Tay"],c:0,icon:"👃"},{q:"Hand là gì?",a:["Bàn tay","Bàn chân","Đầu","Cổ"],c:0,icon:"🖐️"},
+                {q:"Sun là gì?",a:["Mặt trời","Mặt trăng","Sao","Mây"],c:0,icon:"☀️"},{q:"Moon là gì?",a:["Mặt trăng","Mặt trời","Đất","Biển"],c:0,icon:"🌙"},{q:"Fish là con gì?",a:["Cá","Tôm","Cua","Ốc"],c:0,icon:"🐟"},
+                {q:"Bird là con gì?",a:["Chim","Gà","Vịt","Bướm"],c:0,icon:"🐦"},{q:"Flower là gì?",a:["Bông hoa","Cái cây","Cỏ","Lá"],c:0,icon:"🌸"},{q:"Milk là gì?",a:["Sữa","Nước","Trà","Bánh"],c:0,icon:"🥛"}
+            ],
+            tunhien: [
+                {q:"Mặt trời mọc hướng nào?",a:["Đông","Tây","Nam","Bắc"],c:0,icon:"🌅"},{q:"Cá sống ở đâu?",a:["Dưới nước","Trên cạn","Trên trời","Trong đất"],c:0,icon:"🐟"},
+                {q:"Đèn đỏ phải làm gì?",a:["Dừng lại","Đi tiếp","Chạy nhanh","Bấm còi"],c:0,icon:"🔴"},{q:"Khi mưa cần gì?",a:["Ô (dù)","Kính râm","Kem chống nắng","Quạt"],c:0,icon:"☔"},
+                {q:"Mùa nào lạnh nhất?",a:["Đông","Hè","Thu","Xuân"],c:0,icon:"⛄"},{q:"Con hổ ăn gì?",a:["Thịt","Cỏ","Cơm","Kẹo"],c:0,icon:"🐅"},{q:"Nước biển vị gì?",a:["Mặn","Ngọt","Chua","Cay"],c:0,icon:"🌊"},
+                {q:"Cầu vồng mấy màu?",a:["7","5","3","10"],c:0,icon:"🌈"},{q:"Cây cần gì để sống?",a:["Nước & Ánh sáng","Kẹo","Thịt","Bánh"],c:0,icon:"🌱"},{q:"Con gì cho sữa?",a:["Bò","Gà","Vịt","Chim"],c:0,icon:"🐄"},
+                {q:"Băng tuyết màu gì?",a:["Trắng","Đen","Đỏ","Vàng"],c:0,icon:"❄️"},{q:"Mặt trăng thấy khi nào?",a:["Ban đêm","Ban ngày","Buổi trưa","Cả ngày"],c:0,icon:"🌙"},
+                {q:"Con gì có vòi dài?",a:["Voi","Hổ","Khỉ","Chuột"],c:0,icon:"🐘"},{q:"Con gì cổ dài nhất?",a:["Hươu cao cổ","Ngựa","Trâu","Bò"],c:0,icon:"🦒"},{q:"Con gì chúa sơn lâm?",a:["Hổ/Sư tử","Mèo","Thỏ","Gà"],c:0,icon:"🦁"},
+                {q:"Gạo nấu thành gì?",a:["Cơm","Cháo","Bún","Phở"],c:0,icon:"🍚"},{q:"Con ong làm gì?",a:["Hút mật","Ăn cỏ","Bắt chuột","Ngủ"],c:0,icon:"🐝"},{q:"Con nhện giăng gì?",a:["Tơ","Lưới","Dây","Chỉ"],c:0,icon:"🕸️"},
+                {q:"Mây màu gì?",a:["Trắng","Xanh","Đỏ","Vàng"],c:0,icon:"☁️"},{q:"Lửa nóng hay lạnh?",a:["Nóng","Lạnh"],c:0,icon:"🔥"},{q:"Đá cứng hay mềm?",a:["Cứng","Mềm"],c:0,icon:"🪨"},
+                {q:"Bông gòn nhẹ hay nặng?",a:["Nhẹ","Nặng"],c:0},{q:"Con ếch sống ở đâu?",a:["Vừa nước vừa cạn","Chỉ dưới nước","Chỉ trên cây","Trong nhà"],c:0,icon:"🐸"},
+                {q:"Con rùa đi thế nào?",a:["Chậm","Nhanh","Nhảy","Bay"],c:0,icon:"🐢"},{q:"Con thỏ thích ăn gì?",a:["Cà rốt","Thịt","Cơm","Cá"],c:0,icon:"🥕"}
+            ],
+            logic: [
+                {q:"Cái gì càng rửa càng bẩn?",a:["Nước","Bát","Quần áo","Xe"],c:0,icon:"💧"},{q:"Sáng 4 chân, trưa 2 chân, chiều 3 chân?",a:["Con người","Con bò","Con chó","Con gà"],c:0,icon:"👶👨👴"},
+                {q:"1kg sắt và 1kg bông cái nào nặng?",a:["Bằng nhau","Sắt","Bông","Không biết"],c:0,icon:"⚖️"},{q:"Cái gì có chân không biết đi?",a:["Cái bàn","Con gà","Em bé","Con mèo"],c:0,icon:"🪑"},
+                {q:"Tháng 2 có bao nhiêu ngày?",a:["28 hoặc 29","30","31","25"],c:0},{q:"Mèo con là con ai?",a:["Mèo mẹ","Chó mẹ","Gà mẹ","Vịt mẹ"],c:0,icon:"🐈"},
+                {q:"Cái gì bạn có nhưng người khác gọi?",a:["Tên","Tiền","Xe","Nhà"],c:0},{q:"Tìm hình khác loại?",a:["Bóng đá","Cái bát","Cái đĩa","Cái thìa"],c:0,icon:"⚽"},
+                {q:"Cái gì không cánh mà bay?",a:["Bóng bay","Máy bay","Chim","Ong"],c:0,icon:"🎈"},{q:"Nhà Nam có 3 anh em: Tí, Tèo và ...?",a:["Nam","Bình","An","Tâm"],c:0},
+                {q:"Con gì sinh ra đã già?",a:["Con Ông (Ong)","Con Bướm","Con Muỗi","Con Ruồi"],c:0,icon:"🐝"},{q:"Cái gì đập thì sống, không đập thì chết?",a:["Trái tim","Cái trống","Quả trứng","Con muỗi"],c:0,icon:"❤️"},
+                {q:"Càng kéo càng ngắn là gì?",a:["Điếu thuốc","Sợi dây","Cái kẹo","Cây thước"],c:0},{q:"Cái gì đi thì nằm, đứng thì nằm, nằm thì đứng?",a:["Bàn chân","Bàn tay","Cái đầu","Cái bụng"],c:0,icon:"🦶"},
+                {q:"Lịch nào dài nhất?",a:["Lịch sử","Lịch treo tường","Lịch bàn","Lịch vạn niên"],c:0,icon:"📚"},{q:"Quần gì rộng nhất?",a:["Quần đảo","Quần đùi","Quần dài","Quần bò"],c:0,icon:"🏝️"},
+                {q:"Xã nào đông nhất?",a:["Xã hội","Xã đàn","Xã tắc","Xã giao"],c:0},{q:"Con gì đập thì chết, không đập thì sống?",a:["Con tim","Con muỗi","Con ruồi","Con kiến"],c:0},
+                {q:"Cái gì càng thắng càng thua?",a:["Đua xe đạp (Thắng phanh)","Đánh bài","Đá bóng","Chạy thi"],c:0},{q:"Biển nào không có nước?",a:["Biển báo/Bản đồ","Biển Đông","Biển hồ","Biển chết"],c:0}
+            ]
+        };
+
+        const questionBank = {
+            toan: genMath(60),
+            tiengviet: [...staticQ.tiengviet, ...staticQ.tiengviet],
+            tienganh: [...staticQ.tienganh, ...staticQ.tienganh],
+            tunhien: [...staticQ.tunhien, ...staticQ.tunhien],
+            logic: [...staticQ.logic, ...staticQ.logic]
+        };
+
+        const flashcardData = {
+            animals: [ {id:'c',e:'Cat',v:'Mèo',i:'🐱'}, {id:'d',e:'Dog',v:'Chó',i:'🐶'}, {id:'l',e:'Lion',v:'Sư tử',i:'🦁'}, {id:'p',e:'Pig',v:'Heo',i:'🐷'}, {id:'b',e:'Bird',v:'Chim',i:'🐦'}, {id:'f',e:'Fish',v:'Cá',i:'🐟'}, {id:'m',e:'Monkey',v:'Khỉ',i:'🐵'}, {id:'ti',e:'Tiger',v:'Hổ',i:'🐯'}, {id:'pa',e:'Panda',v:'Gấu trúc',i:'🐼'}, {id:'ch',e:'Chicken',v:'Gà',i:'🐔'} ],
+            transport: [ {id:'ca',e:'Car',v:'Ô tô',i:'🚗'}, {id:'bu',e:'Bus',v:'Buýt',i:'🚌'}, {id:'bi',e:'Bike',v:'Xe đạp',i:'🚲'}, {id:'pl',e:'Plane',v:'Máy bay',i:'✈️'}, {id:'tr',e:'Train',v:'Tàu hỏa',i:'🚂'}, {id:'sh',e:'Ship',v:'Tàu thủy',i:'🚢'}, {id:'mo',e:'Moto',v:'Xe máy',i:'🛵'}, {id:'tru',e:'Truck',v:'Xe tải',i:'🚚'}, {id:'amb',e:'Ambulance',v:'Cứu thương',i:'🚑'}, {id:'roc',e:'Rocket',v:'Tên lửa',i:'🚀'} ],
+            mix: [ {id:'su',e:'Sun',v:'Mặt trời',i:'☀️'}, {id:'moo',e:'Moon',v:'Mặt trăng',i:'🌙'}, {id:'fl',e:'Flower',v:'Hoa',i:'🌸'}, {id:'tr',e:'Tree',v:'Cây',i:'🌳'}, {id:'ap',e:'Apple',v:'Táo',i:'🍎'}, {id:'ba',e:'Ball',v:'Bóng',i:'⚽'}, {id:'bo',e:'Book',v:'Sách',i:'📖'}, {id:'pe',e:'Pen',v:'Bút',i:'🖊️'}, {id:'ho',e:'Home',v:'Nhà',i:'🏠'}, {id:'st',e:'Star',v:'Sao',i:'⭐'} ]
+        };
+
+        const topics = { 'toan':'Toán Học', 'tiengviet':'Tiếng Việt', 'tienganh':'Tiếng Anh', 'tunhien':'Thế Giới', 'logic':'Tư Duy', 'tonghop':'Tổng Hợp', 'memory':'Trí Nhớ' };
+        const avatars = ['🐱','🦁','🐰','🐼','🦄','🤖','🦖','🐝','🦊','🐸'];
+        
+        let users = JSON.parse(localStorage.getItem('rcv_users_v2')) || [];
+        if(users.length===0){ users=[{id:Date.now(),name:"Kem",avatar:"🐱"}]; localStorage.setItem('rcv_users_v2',JSON.stringify(users)); }
+        let history = JSON.parse(localStorage.getItem('rcv_history_v2')) || [];
+        
+        let currentUser=null, selectedAvatar=avatars[0], editUserId=null, performanceChart=null, activeExitScreen=null;
+        let quizState={topic:'',questions:[],currentIndex:0,score:0,timer:null,timeLeft:15,maxQuestions:15};
+        let memoryState={cards:[],flipped:[],matched:[],moves:0,canFlip:true,level:'', timer: null, timeLeft: 30, totalTime: 30};
+
+        const screens = { user:document.getElementById('screen-user'), topic:document.getElementById('screen-topic'), game:document.getElementById('screen-game'), memory:document.getElementById('screen-memory'), result:document.getElementById('screen-result'), dashboard:document.getElementById('screen-dashboard') };
+
+        // --- INIT & USER ---
+        function init(){ renderAvatarSelector(); renderUserList(); }
+        function switchScreen(n){ sfx.click(); Object.values(screens).forEach(el=>el.classList.add('hidden')); screens[n].classList.remove('hidden'); }
+        function renderAvatarSelector(){ const c=document.getElementById('avatar-selector'); c.innerHTML=''; avatars.forEach(av=>{ const d=document.createElement('div'); d.className=`avatar-option text-4xl p-2 select-none ${av===selectedAvatar?'avatar-selected':''}`; d.innerText=av; d.onclick=()=>{sfx.click();selectedAvatar=av;renderAvatarSelector();}; c.appendChild(d); }); }
+        function renderUserList(){ const l=document.getElementById('user-list'); l.innerHTML=''; users.forEach(u=>{ l.innerHTML+=`<div class="bg-white p-3 rounded-xl border border-gray-100 flex items-center justify-between shadow-sm active:border-blue-300 transition"><div class="flex items-center gap-3 cursor-pointer flex-grow w-full" onclick="login(${u.id})"><span class="text-3xl">${u.avatar}</span><span class="font-bold text-gray-700 text-lg">${u.name}</span></div><button onclick="startEditUser(${u.id},event)" class="text-gray-300 hover:text-blue-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button></div>`; }); }
+        function handleUserAction(){ const n=document.getElementById('new-username').value.trim(); if(!n) return alert("Bé chưa nhập tên!"); if(editUserId){ const i=users.findIndex(u=>u.id===editUserId); if(i!==-1){users[i].name=n;users[i].avatar=selectedAvatar;saveUsers();cancelEdit();} } else { const u={id:Date.now(),name:n,avatar:selectedAvatar}; users.push(u); saveUsers(); login(u.id); } document.getElementById('new-username').value=''; }
+        function startEditUser(uid,e){ e.stopPropagation(); sfx.click(); const u=users.find(x=>x.id===uid); if(!u)return; editUserId=uid; document.getElementById('new-username').value=u.name; selectedAvatar=u.avatar; renderAvatarSelector(); const b=document.getElementById('btn-create-user'); b.innerHTML='<i class="fa-solid fa-check"></i> Lưu'; b.className='btn-3d w-full bg-orange-500 border-orange-700 text-white font-bold py-3 rounded-xl text-lg shadow-lg'; document.getElementById('btn-cancel-edit').classList.remove('hidden'); }
+        function cancelEdit(){ editUserId=null; document.getElementById('new-username').value=''; const b=document.getElementById('btn-create-user'); b.innerHTML='<i class="fa-solid fa-play mr-2"></i> Bắt đầu ngay'; b.className='btn-3d w-full bg-green-500 border-green-700 text-white font-bold py-3 rounded-xl text-lg shadow-lg'; document.getElementById('btn-cancel-edit').classList.add('hidden'); selectedAvatar=avatars[0]; renderAvatarSelector(); }
+        function saveUsers(){ localStorage.setItem('rcv_users_v2',JSON.stringify(users)); renderUserList(); }
+        function login(uid){ currentUser=users.find(u=>u.id===uid); if(currentUser){ document.getElementById('display-avatar').innerText=currentUser.avatar; document.getElementById('display-username').innerText=currentUser.name; switchScreen('topic'); } }
+        function logout(){ currentUser=null; cancelEdit(); switchScreen('user'); }
+
+        // --- QUIZ LOGIC ---
+        function startGame(tk){
+            let qs = (tk==='tonghop') ? Object.values(questionBank).flat() : [...questionBank[tk]];
+            qs = qs.sort(()=>0.5-Math.random()).slice(0,15);
+            quizState={topic:tk,questions:qs,currentIndex:0,score:0,timer:null,timeLeft:15,maxQuestions:qs.length};
+            document.getElementById('game-topic-name').innerText=topics[tk]; document.getElementById('score').innerText='0';
+            switchScreen('game'); loadQuestion();
+        }
+        function loadQuestion(){
+            if(quizState.currentIndex>=quizState.questions.length){ endQuizGame(); return; }
+            const q=quizState.questions[quizState.currentIndex];
+            document.getElementById('question-counter').innerText=`${quizState.currentIndex+1}/${quizState.maxQuestions}`;
+            document.getElementById('question-text').innerText=q.q;
+            const img=document.getElementById('question-image'); if(q.icon){img.innerText=q.icon;img.classList.remove('hidden');}else img.classList.add('hidden');
+            const ac=document.getElementById('answers-container'); ac.innerHTML='';
+            q.a.forEach((ans,i)=>{ const b=document.createElement('button'); b.className='btn-3d w-full bg-white text-blue-600 font-bold py-3 rounded-xl border-2 border-blue-200 hover:bg-blue-50 text-xl shadow-sm transition active:bg-blue-100'; b.innerText=ans; b.onclick=()=>checkAnswer(i,b,q.c); ac.appendChild(b); });
+            quizState.timeLeft=15; updateTimerBar();
+            if(quizState.timer) clearInterval(quizState.timer);
+            quizState.timer=setInterval(()=>{ quizState.timeLeft--; updateTimerBar(); if(quizState.timeLeft<=0) handleTimeOut(); },1000);
+        }
+        function updateTimerBar(){ const b=document.getElementById('timer-bar'); b.style.width=`${(quizState.timeLeft/15)*100}%`; b.style.backgroundColor=quizState.timeLeft<5?'#ef4444':'#22c55e'; }
+        function handleTimeOut(){ clearInterval(quizState.timer); sfx.wrong(); disableInputs(); setTimeout(()=>{quizState.currentIndex++; loadQuestion();},1500); }
+        function checkAnswer(si,el,ci){ clearInterval(quizState.timer); disableInputs(); if(si===ci){ sfx.correct(); el.classList.add('correct-anim'); quizState.score+=10; document.getElementById('score').innerText=quizState.score; } else { sfx.wrong(); el.classList.add('wrong-anim'); document.getElementById('answers-container').children[ci].classList.add('correct-anim','opacity-80'); } setTimeout(()=>{quizState.currentIndex++; loadQuestion();},1500); }
+        function disableInputs(){ Array.from(document.getElementById('answers-container').children).forEach(b=>b.disabled=true); }
+        function endQuizGame(){ saveHistory(quizState.score, topics[quizState.topic], quizState.topic); showResult(quizState.score, quizState.maxQuestions*10); }
+
+        // --- MEMORY LOGIC ---
+        function showMemoryDifficultyModal(){ sfx.click(); document.getElementById('modal-memory-level').classList.remove('hidden'); }
+        function startMemoryGame(level){
+            document.getElementById('modal-memory-level').classList.add('hidden');
+            let pairCount = 3; let gridClass = 'grid-cols-3'; let source = 'mix'; let time = 30;
+            if(level==='easy') { pairCount=3; gridClass='grid-cols-3'; source=['animals','transport','mix'][Math.floor(Math.random()*3)]; time=30; }
+            if(level==='medium') { pairCount=6; gridClass='grid-cols-3'; source='mix'; time=60; }
+            if(level==='hard') { pairCount=10; gridClass='grid-cols-4'; source='mix'; time=120; }
+            
+            // Get data
+            let pool = [];
+            if(source==='mix') pool=[...flashcardData.animals, ...flashcardData.transport, ...flashcardData.mix];
+            else pool = flashcardData[source];
+            
+            pool = pool.sort(()=>0.5-Math.random()).slice(0, pairCount);
+            let cards = [];
+            pool.forEach(x => { cards.push({...x}); cards.push({...x}); });
+            cards = cards.sort(()=>0.5-Math.random());
+
+            memoryState = { cards: cards, flipped: [], matched: [], moves: 0, canFlip: true, level: level, timeLeft: time, totalTime: time, timer: null };
+            document.getElementById('memory-level-display').innerText = `ĐỘ KHÓ: ${level==='easy'?'DỄ':(level==='medium'?'VỪA':'KHÓ')}`;
+            document.getElementById('memory-moves').innerText = '0';
+            
+            const grid = document.getElementById('memory-grid');
+            grid.className = `grid gap-2 flex-grow content-center justify-center ${gridClass}`;
+            grid.innerHTML = '';
+            
+            cards.forEach((c,i) => {
+                const el = document.createElement('div');
+                el.className = `perspective w-full h-24 cursor-pointer card`;
+                el.dataset.index = i; el.onclick = () => flipCard(i);
+                el.innerHTML = `<div class="card-inner w-full h-full relative text-center"><div class="card-face card-front"></div><div class="card-face card-back bg-white border-2 border-blue-200"><div class="text-3xl mb-1">${c.i}</div><div class="text-[10px] font-bold text-blue-600 uppercase leading-none">${c.e}</div><div class="text-[9px] text-gray-400 leading-none mt-0.5">${c.v}</div></div></div>`;
+                grid.appendChild(el);
+            });
+            switchScreen('memory');
+            
+            // Start Timer
+            updateMemoryTimerBar();
+            if(memoryState.timer) clearInterval(memoryState.timer);
+            memoryState.timer = setInterval(()=>{
+                memoryState.timeLeft--;
+                updateMemoryTimerBar();
+                if(memoryState.timeLeft <= 0) handleMemoryTimeOut();
+            }, 1000);
+        }
+
+        function updateMemoryTimerBar() {
+            const bar = document.getElementById('memory-timer-bar');
+            const pct = (memoryState.timeLeft / memoryState.totalTime) * 100;
+            bar.style.width = `${pct}%`;
+            bar.style.backgroundColor = memoryState.timeLeft < 10 ? '#ef4444' : '#14b8a6'; // red : teal
+        }
+
+        function handleMemoryTimeOut() {
+            clearInterval(memoryState.timer);
+            sfx.wrong();
+            // Show game over result
+            showResult(0, 100, true, true); // true, true = isMemory, isTimeOut
+        }
+
+        function flipCard(i){
+            if(!memoryState.canFlip || memoryState.flipped.includes(i) || memoryState.matched.includes(i) || memoryState.timeLeft <= 0) return;
+            sfx.flip(); memoryState.flipped.push(i);
+            document.querySelector(`.card[data-index="${i}"]`).classList.add('flipped');
+            if(memoryState.flipped.length===2){
+                memoryState.moves++; document.getElementById('memory-moves').innerText=memoryState.moves;
+                checkMatch();
+            }
+        }
+        function checkMatch(){
+            memoryState.canFlip=false;
+            const [i1, i2] = memoryState.flipped;
+            if(memoryState.cards[i1].id === memoryState.cards[i2].id){
+                sfx.match(); memoryState.matched.push(i1,i2); memoryState.flipped=[]; memoryState.canFlip=true;
+                if(memoryState.matched.length===memoryState.cards.length) {
+                    clearInterval(memoryState.timer); // Stop timer on win
+                    setTimeout(endMemoryGame,800);
+                }
+            } else {
+                setTimeout(()=>{
+                    document.querySelector(`.card[data-index="${i1}"]`).classList.remove('flipped');
+                    document.querySelector(`.card[data-index="${i2}"]`).classList.remove('flipped');
+                    memoryState.flipped=[]; memoryState.canFlip=true;
+                },1000);
+            }
+        }
+        function endMemoryGame(){
+            // Score based on level + bonus time
+            let baseScore = memoryState.level==='easy'?50 : (memoryState.level==='medium'?100 : 150);
+            // Bonus points for time left (1pt per second)
+            let score = baseScore + memoryState.timeLeft;
+            
+            let displayLevel = memoryState.level==='easy'?' (Dễ)':(memoryState.level==='medium'?' (Vừa)':' (Khó)');
+            saveHistory(score, "Trí Nhớ"+displayLevel, "memory");
+            showResult(score, score, true);
+        }
+
+        // --- COMMON ---
+        function saveHistory(score, tName, tKey){
+            const r = { userId:currentUser.id, date:new Date().toLocaleDateString('vi-VN'), topicKey:tKey, topicName:tName, score:score };
+            history.unshift(r); localStorage.setItem('rcv_history_v2',JSON.stringify(history));
+        }
+        function showResult(score, max, isMem=false, isTimeOut=false){
+            const t=document.getElementById('result-title'), i=document.getElementById('result-icon'), f=document.getElementById('result-feedback');
+            document.getElementById('final-score').innerText=score;
+            
+            if(isTimeOut) {
+                t.innerText = "Hết giờ rồi!"; t.className="text-3xl font-bold text-gray-500 mb-2";
+                i.innerText = "⏰";
+                f.innerText = "Tiếc quá, lần sau nhanh tay hơn nhé!";
+            } else if(isMem){
+                sfx.win();
+                t.innerText="Trí nhớ siêu phàm!"; t.className="text-3xl font-bold text-teal-500 mb-2";
+                i.innerText="🧠✨"; 
+                f.innerText=`Hoàn thành! Còn dư ${memoryState.timeLeft} giây!`;
+                confetti({particleCount:150,spread:70,origin:{y:0.6}});
+            } else {
+                sfx.win();
+                const r=score/max;
+                if(r>=0.8){ t.innerText="Xuất sắc!"; t.className="text-3xl font-bold text-yellow-500 mb-2"; i.innerText="🏆🔔"; f.innerText="Con là thiên tài!"; confetti({particleCount:150,spread:70,origin:{y:0.6}}); }
+                else if(r>=0.5){ t.innerText="Làm tốt lắm!"; t.className="text-3xl font-bold text-blue-500 mb-2"; i.innerText="🎈"; f.innerText="Cố lên hạng nhất nha!"; }
+                else { t.innerText="Cố lên nhé!"; t.className="text-3xl font-bold text-gray-500 mb-2"; i.innerText="💪"; f.innerText="Luyện thêm xíu nữa!"; }
+            }
+            switchScreen('result');
+        }
+
+        // --- DASHBOARD ---
+        function showExitModal(s='game'){ sfx.click(); activeExitScreen=s; document.getElementById('modal-exit').classList.remove('hidden'); }
+        function closeExitModal(){ sfx.click(); document.getElementById('modal-exit').classList.add('hidden'); }
+        function realExitGame(){ 
+            sfx.click(); 
+            document.getElementById('modal-exit').classList.add('hidden'); 
+            if(activeExitScreen==='game') clearInterval(quizState.timer);
+            if(activeExitScreen==='memory') clearInterval(memoryState.timer);
+            switchScreen('topic'); 
+        }
+        function backToTopics(){ switchScreen('topic'); }
+        function showDashboard(){ switchScreen('dashboard'); switchTab('chart'); }
+        function switchTab(t){
+            ['chart','rank','history'].forEach(x=>document.getElementById(`content-${x}`).classList.add('hidden')); document.getElementById(`content-${t}`).classList.remove('hidden');
+            ['tab-chart','tab-rank','tab-history'].forEach(x=>document.getElementById(x).className="flex-1 py-2 rounded-lg text-xs font-bold transition text-gray-400 bg-gray-100");
+            document.getElementById(`tab-${t}`).className="flex-1 py-2 rounded-lg text-xs font-bold transition bg-white shadow text-blue-600";
+            if(t==='chart') setTimeout(renderChart,50); if(t==='rank') renderRank('tonghop'); if(t==='history') renderHistory();
+        }
+        function renderChart(){
+            document.getElementById('chart-username').innerText=currentUser.name;
+            const ctx=document.getElementById('performanceChart').getContext('2d');
+            const keys=['toan','tiengviet','tienganh','tunhien','logic','memory'];
+            const labels=['Toán','T.Việt','T.Anh','T.Giới','Logic','Trí Nhớ'];
+            const data=keys.map(k=>{
+                const rs=history.filter(h=>h.userId===currentUser.id && h.topicKey===k);
+                if(!rs.length) return 0;
+                if(k==='memory') {
+                    // Normalize memory scores to roughly 0-100 range for visualization
+                    let total=0; rs.forEach(r=>{
+                        let max=100; // Base baseline
+                        if(r.topicName.includes('Dễ')) max=50; if(r.topicName.includes('Khó')) max=150;
+                        let normalized = (r.score / max) * 100;
+                        if(normalized > 100) normalized = 100; // Cap at 100 for graph beauty
+                        total += normalized; 
+                    });
+                    return Math.round(total/rs.length);
+                }
+                return Math.round(rs.reduce((a,b)=>a+b.score,0)/rs.length);
+            });
+            if(performanceChart) performanceChart.destroy();
+            performanceChart=new Chart(ctx,{type:'radar',data:{labels:labels,datasets:[{label:'Điểm TB',data:data,backgroundColor:'rgba(59,130,246,0.2)',borderColor:'rgba(59,130,246,1)',pointBackgroundColor:'#FBBF24',borderWidth:2}]},options:{scales:{r:{angleLines:{display:false},suggestedMin:0,suggestedMax:100,pointLabels:{font:{size:11,family:'Baloo 2'}},ticks:{display:false}}},plugins:{legend:{display:false}},maintainAspectRatio:false}});
+        }
+        function renderRank(k){
+            const c=document.getElementById('rank-filters'); c.innerHTML='';
+            ['tonghop',...Object.keys(topics)].forEach(key=>{
+                const b=document.createElement('button'); b.className=`whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border ${key===k?'bg-blue-500 text-white border-blue-600 shadow-md':'bg-white text-gray-500 border-gray-200'}`;
+                b.innerText=topics[key]||"Tổng Hợp"; b.onclick=()=>renderRank(key); c.appendChild(b);
+            });
+            const ums=[]; users.forEach(u=>{ const rs=history.filter(h=>h.userId===u.id&&(k==='tonghop'||h.topicKey===k)); if(rs.length) ums.push({u,s:Math.max(...rs.map(r=>r.score))}); });
+            ums.sort((a,b)=>b.s-a.s);
+            const l=document.getElementById('rank-list'); l.innerHTML=ums.length?'': '<tr><td colspan="3" class="p-4 text-center text-gray-400">Chưa có dữ liệu</td></tr>';
+            ums.forEach((x,i)=>{ l.innerHTML+=`<tr class="${i<3?'bg-yellow-50':''}"><td class="p-3 align-middle">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td><td class="p-3 flex items-center gap-2"><span class="text-xl">${x.u.avatar}</span> <span>${x.u.name}</span></td><td class="p-3 text-right text-blue-600">${x.s}</td></tr>`; });
+        }
+        function renderHistory(){
+            const h=history.filter(x=>x.userId===currentUser.id);
+            const l=document.getElementById('history-list'); const e=document.getElementById('empty-history');
+            if(!h.length){l.innerHTML=`<tr><td class="text-center p-4 text-gray-400"><i class="fa-solid fa-ghost text-2xl mb-1 block"></i>Chưa có lịch sử</td></tr>`;} 
+            else { l.innerHTML=h.map(x=>`<tr class="border-b border-gray-100"><td class="py-3 px-1"><div class="text-[10px] text-gray-400 font-bold">${x.date}</div><div class="font-bold text-blue-600 text-xs">${x.topicName}</div></td><td class="py-3 px-1 text-right"><span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">${x.score}đ</span></td></tr>`).join(''); }
+        }
+
+        init();
+    </script>
+</body>
+</html>
+

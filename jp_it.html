@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện thi Tiếng Nhật IT (Full Data)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Nunito', 'Noto Sans JP', sans-serif; }
+        .hidden { display: none !important; }
+        
+        /* 3D Flip */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        @keyframes bounceIn { 
+            0% { opacity: 0; transform: scale(0.3); } 
+            50% { transform: scale(1.05); } 
+            70% { transform: scale(0.9); } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+        .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards; }
+        
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop { animation: pop 0.3s ease-in-out; }
+
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+        .animate-shake-victory { animation: shake 0.5s ease-in-out infinite; }
+
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+        /* Avatar Selection */
+        .avatar-option.selected {
+            border-color: #6366f1; /* Indigo 500 */
+            background-color: #e0e7ff; /* Indigo 100 */
+            transform: scale(1.1);
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 overflow-x-hidden">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="relative min-h-screen flex flex-col">
+        
+        <!-- LOADING SCREEN -->
+        <div id="screen-loading" class="fixed inset-0 bg-blue-50 z-50 flex flex-col items-center justify-center text-blue-600 transition-opacity duration-500">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+            <p class="font-bold text-lg animate-pulse">Đang tải dữ liệu...</p>
+        </div>
+
+        <!-- LOGIN SCREEN -->
+        <div id="screen-login" class="screen hidden min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4">
+            <div class="bg-white rounded-[2rem] shadow-2xl p-6 md:p-8 max-w-md w-full text-center border-4 border-white/20 animate-bounce-in relative overflow-hidden">
+                
+                <!-- Header Logo -->
+                <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                    <i data-lucide="book-open" class="w-10 h-10 text-indigo-600"></i>
+                </div>
+                <h1 class="text-2xl font-black text-gray-800 mb-1">IT Japanese</h1>
+                <p class="text-gray-500 mb-6 font-medium text-sm">Luyện thi chuyên ngành IT (N5 & N4)</p>
+
+                <!-- VIEW 1: USER LIST (Select existing) -->
+                <div id="login-view-list" class="hidden">
+                    <p class="text-gray-600 font-bold mb-4 text-left px-2">Ai đang học thế?</p>
+                    <div id="user-list-grid" class="grid grid-cols-2 gap-3 mb-6 max-h-60 overflow-y-auto custom-scrollbar p-1">
+                        <!-- Users injected here -->
+                    </div>
+                    <button id="btn-show-create" class="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 font-bold hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="plus" class="w-5 h-5"></i> Tạo người mới
+                    </button>
+                </div>
+
+                <!-- VIEW 2: CREATE USER -->
+                <div id="login-view-create" class="hidden">
+                    <div class="space-y-4">
+                        <div class="text-left">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">Tên của bạn</label>
+                            <input type="text" id="create-user-input" placeholder="Nhập tên..." class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none font-bold text-gray-700 bg-gray-50">
+                        </div>
+
+                        <div class="text-left">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Chọn Avatar</label>
+                            <div id="avatar-grid" class="grid grid-cols-5 gap-2">
+                                <!-- Avatars injected here -->
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-2">
+                            <button id="btn-cancel-create" class="hidden flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-all">
+                                Quay lại
+                            </button>
+                            <button id="btn-confirm-create" class="flex-[2] bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-200 text-white font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2">
+                                Bắt đầu <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- DASHBOARD SCREEN -->
+        <div id="screen-dashboard" class="screen hidden pb-12 animate-fade-in">
+            <!-- Header -->
+            <div class="bg-white px-6 py-4 shadow-sm flex justify-between items-center sticky top-0 z-20">
+                <div class="flex items-center gap-3">
+                    <!-- Avatar Display -->
+                    <div id="dashboard-avatar" class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-lg bg-gray-100">
+                        👤
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-wider">Học viên</p>
+                        <p id="user-display-name" class="text-lg font-bold text-gray-800 leading-none">User</p>
+                    </div>
+                </div>
+                <button id="btn-logout" class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50" title="Đổi người học">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="container mx-auto p-4 max-w-6xl mt-6">
+                <!-- Hero Banner -->
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-3xl p-8 text-white shadow-xl shadow-indigo-200 mb-10 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <h2 class="text-3xl font-black mb-2 flex items-center gap-2">Xin chào! 👋</h2>
+                            <p class="text-indigo-100 font-medium">Hôm nay bạn muốn học gì?</p>
+                        </div>
+                        <div class="bg-white/10 p-5 rounded-2xl backdrop-blur-md text-center border border-white/20 min-w-[120px] shadow-lg">
+                            <span id="user-score-count" class="block text-4xl font-black">0</span>
+                            <span class="text-xs uppercase font-bold tracking-widest opacity-80">Bài thi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 100 QUESTIONS CHALLENGE BANNER -->
+                <div class="mb-8">
+                    <div class="bg-gradient-to-r from-pink-500 to-rose-500 rounded-3xl p-1 shadow-lg transform transition hover:scale-[1.01] cursor-pointer group" onclick="app.openGameConfig('All', 'mixed')">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-[20px] p-6 flex flex-col sm:flex-row items-center justify-between text-white h-full gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="p-4 bg-white/20 rounded-full shadow-inner animate-pulse">
+                                     <i data-lucide="swords" class="w-8 h-8 text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-black flex items-center gap-2">
+                                        Thử thách tổng hợp
+                                        <span class="bg-yellow-400 text-yellow-900 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">HOT</span>
+                                    </h3>
+                                    <p class="text-pink-100 font-medium opacity-90 group-hover:opacity-100">100 câu hỏi ngẫu nhiên từ N5 & N4</p>
+                                </div>
+                            </div>
+                            <div class="bg-white text-rose-600 font-bold px-8 py-4 rounded-xl shadow-lg flex items-center gap-2 group-hover:bg-rose-50 transition-colors">
+                                Chiến ngay <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Actions Column -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- N5 Section -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <span class="bg-emerald-100 text-emerald-700 font-black px-3 py-1 rounded-lg">N5</span>
+                                    <h3 class="text-xl font-bold text-gray-800">IT Cơ Bản</h3>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button onclick="app.openGameConfig('N5', 'jp_vn')" class="game-btn bg-white text-gray-700 border-2 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-start gap-2">
+                                    <span class="bg-gray-100 p-1 rounded text-xs">🇯🇵 ➜ 🇻🇳</span> Nhật - Việt
+                                </button>
+                                <button onclick="app.openGameConfig('N5', 'vn_jp')" class="game-btn bg-white text-gray-700 border-2 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-start gap-2">
+                                    <span class="bg-gray-100 p-1 rounded text-xs">🇻🇳 ➜ 🇯🇵</span> Việt - Nhật
+                                </button>
+                                <button onclick="app.openGameConfig('N5', 'kanji_hira')" class="game-btn bg-white text-gray-700 border-2 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-start gap-2">
+                                    <span class="bg-gray-100 p-1 rounded text-xs">漢 ➜ あ</span> Kanji - Hira
+                                </button>
+                                <button onclick="app.openGameConfig('N5', 'hira_kanji')" class="game-btn bg-white text-gray-700 border-2 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-start gap-2">
+                                    <span class="bg-gray-100 p-1 rounded text-xs">あ ➜ 漢</span> Hira - Kanji
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- N4 Section -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <span class="bg-amber-100 text-amber-700 font-black px-3 py-1 rounded-lg">N4</span>
+                                    <h3 class="text-xl font-bold text-gray-800">Business & Email (+New Data)</h3>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button onclick="app.openGameConfig('N4', 'jp_vn')" class="game-btn bg-white text-gray-700 border-2 border-gray-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-start gap-2">
+                                    <span class="bg-gray-100 p-1 rounded text-xs">🇯🇵 ➜ 🇻🇳</span> Nhật - Việt
+                                </button>
+                                <button onclick="app.openGameConfig('N4', 'vn_jp')" class="game-btn bg-white text-gray-700 border-2 border-gray-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-start gap-2">
+                                    <span class="bg-gray-100 p-1 rounded text-xs">🇻🇳 ➜ 🇯🇵</span> Việt - Nhật
+                                </button>
+                                <button onclick="app.openGameConfig('N4', 'kanji_hira')" class="game-btn bg-white text-gray-700 border-2 border-gray-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-start gap-2">
+                                    <span class="bg-gray-100 p-1 rounded text-xs">漢 ➜ あ</span> Kanji - Hira
+                                </button>
+                            </div>
+                        </div>
+
+                         <!-- Features -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="app.startFlashcard('N5')" class="bg-orange-500 hover:bg-orange-600 border-b-4 border-orange-700 text-white font-bold py-4 px-6 rounded-xl transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-orange-200">
+                                <i data-lucide="gallery-vertical-end" class="w-5 h-5"></i> <span>Flashcard</span>
+                            </button>
+                            <button onclick="app.showDictionary()" class="bg-blue-500 hover:bg-blue-600 border-b-4 border-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+                                <i data-lucide="book" class="w-5 h-5"></i> <span>Từ điển</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard Column -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[600px]">
+                        <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-white rounded-t-3xl">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                                    <i data-lucide="trophy" class="w-5 h-5 text-yellow-500 fill-yellow-500"></i> Bảng vàng
+                                </h3>
+                                <div class="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded text-xs font-bold">
+                                    <i data-lucide="hard-drive" class="w-3 h-3"></i> Local
+                                </div>
+                            </div>
+                            <!-- FILTER DROPDOWN -->
+                            <div class="relative">
+                                <i data-lucide="filter" class="absolute left-2 top-2 w-4 h-4 text-gray-400"></i>
+                                <select id="leaderboard-filter" onchange="app.filterLeaderboard(this.value)" class="w-full pl-8 pr-4 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-600 cursor-pointer">
+                                    <option value="all">Tất cả các bài thi</option>
+                                    <option value="All_mixed" class="font-bold text-rose-500">⚡ Thử thách 100 câu</option>
+                                    <optgroup label="Cấp độ N5">
+                                        <option value="N5_jp_vn">🇯🇵 Nhật - Việt</option>
+                                        <option value="N5_vn_jp">🇻🇳 Việt - Nhật</option>
+                                        <option value="N5_kanji_hira">漢 Kanji - Hira</option>
+                                        <option value="N5_hira_kanji">あ Hira - Kanji</option>
+                                    </optgroup>
+                                    <optgroup label="Cấp độ N4">
+                                        <option value="N4_jp_vn">🇯🇵 Nhật - Việt</option>
+                                        <option value="N4_vn_jp">🇻🇳 Việt - Nhật</option>
+                                        <option value="N4_kanji_hira">漢 Kanji - Hira</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="leaderboard-container" class="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                            <!-- Items inserted by JS -->
+                            <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                                <p class="text-sm">Chưa có dữ liệu.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME CONFIG MODAL (New) -->
+        <div id="modal-game-config" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+             <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-bounce-in">
+                 <div class="flex items-center gap-2 text-indigo-500 mb-4">
+                     <i data-lucide="settings-2" class="w-6 h-6"></i>
+                     <h3 class="text-xl font-bold text-gray-800">Cấu hình bài thi</h3>
+                 </div>
+                 
+                 <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <p class="text-sm font-bold text-gray-500 uppercase mb-3">Chế độ</p>
+                    <p id="config-mode-name" class="text-lg font-black text-indigo-700 mb-6">...</p>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-gray-800">Giới hạn thời gian</p>
+                            <p class="text-xs text-gray-500">15 giây / câu hỏi</p>
+                        </div>
+                        
+                        <!-- Toggle Switch -->
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="config-timer-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:right-0 checked:border-green-400 transition-all duration-300" checked/>
+                            <label for="config-timer-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer checked:bg-green-400 transition-colors duration-300"></label>
+                        </div>
+                    </div>
+                 </div>
+
+                 <div class="flex gap-3 justify-end">
+                     <button onclick="document.getElementById('modal-game-config').classList.add('hidden')" class="text-gray-500 hover:bg-gray-100 font-bold py-3 px-6 rounded-xl transition-colors">Hủy</button>
+                     <button id="btn-start-configured-game" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-indigo-200 flex items-center gap-2">
+                         Bắt đầu <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                     </button>
+                 </div>
+             </div>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="screen-game" class="screen hidden min-h-screen bg-slate-100 flex flex-col">
+            <div class="bg-white shadow-md p-3 px-4 flex justify-between items-center z-10 sticky top-0">
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Chế độ</span>
+                    <span id="game-mode-title" class="text-lg font-black text-indigo-700 leading-none">...</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex flex-col items-end">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase">Câu hỏi</span>
+                        <span id="game-progress" class="text-xl font-black text-gray-800 leading-none">0/0</span>
+                    </div>
+                    <button id="btn-quit-game" class="bg-rose-500 hover:bg-rose-600 border-b-4 border-rose-700 text-white font-bold py-2 px-3 rounded-lg transition-all active:scale-95">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="w-full bg-gray-200 h-1.5">
+                <div id="timer-bar" class="h-full bg-blue-500 transition-all duration-1000 linear" style="width: 100%;"></div>
+            </div>
+
+            <div class="flex-1 container mx-auto p-4 max-w-4xl flex flex-col justify-center">
+                <div id="question-card" class="bg-white rounded-3xl shadow-xl border-b-8 border-gray-100 p-8 md:p-12 mb-6 text-center relative overflow-hidden min-h-[250px] flex flex-col items-center justify-center transition-transform duration-300">
+                    <!-- Feedback Overlay -->
+                    <div id="feedback-overlay" class="hidden absolute inset-0 z-20 bg-white/95 backdrop-blur-sm flex items-center justify-center">
+                        <div id="feedback-content" class="text-center"></div>
+                    </div>
+                    
+                    <h2 id="question-text" class="text-3xl md:text-5xl font-black text-gray-800 mb-4 leading-tight">...</h2>
+                    <div class="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] bg-gray-50 inline-block px-3 py-1 rounded-full">Chọn đáp án đúng</div>
+                </div>
+
+                <div id="answers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Options injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- FLASHCARD SCREEN -->
+        <div id="screen-flashcard" class="screen hidden min-h-screen bg-amber-50 flex flex-col">
+            <div class="bg-white shadow-sm p-4 flex items-center gap-4 sticky top-0 z-10">
+                <button onclick="app.showDashboard()" class="text-gray-500 hover:bg-gray-100 p-2 rounded-lg"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <h1 class="text-xl font-black text-amber-700">FLASHCARD</h1>
+                    <select id="fc-level-select" class="bg-amber-100 text-amber-800 font-bold text-sm py-1 px-3 rounded-lg border-none focus:ring-2 focus:ring-amber-500 cursor-pointer">
+                        <option value="N5">Cấp độ N5</option>
+                        <option value="N4">Cấp độ N4</option>
+                    </select>
+                </div>
+                <span id="flashcard-count" class="font-mono font-bold text-gray-400 text-sm sm:text-base">1 / 10</span>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center p-6">
+                <!-- Card Container -->
+                <div id="flashcard-container" class="w-full max-w-sm aspect-[3/4] perspective-1000 cursor-pointer group">
+                    <div id="flashcard-inner" class="relative w-full h-full transition-all duration-500 transform-style-3d">
+                        <!-- Front -->
+                        <div class="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-xl border-b-8 border-amber-200 flex flex-col items-center justify-center p-8 text-center hover:shadow-2xl transition-shadow">
+                            <span class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-4">Kanji / Từ vựng</span>
+                            <h2 id="fc-front-text" class="text-5xl md:text-6xl font-black text-gray-800 mb-4 break-words w-full">...</h2>
+                            <p class="text-gray-400 text-sm animate-pulse mt-auto">(Chạm để lật)</p>
+                        </div>
+                        <!-- Back -->
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-amber-600 rounded-3xl shadow-xl border-b-8 border-amber-800 flex flex-col items-center justify-center p-8 text-center text-white">
+                             <div class="mb-6 w-full">
+                                <span class="text-xs font-bold text-amber-200 uppercase tracking-widest block mb-1">Cách đọc</span>
+                                <p id="fc-back-reading" class="text-3xl md:text-4xl font-bold break-words">...</p>
+                             </div>
+                             <div class="w-16 h-1 bg-amber-400/50 rounded-full mb-6 shrink-0"></div>
+                             <div class="w-full">
+                                <span class="text-xs font-bold text-amber-200 uppercase tracking-widest block mb-1">Ý nghĩa</span>
+                                <p id="fc-back-meaning" class="text-xl md:text-2xl font-medium break-words">...</p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex gap-4 mt-8">
+                    <button id="fc-prev" class="rounded-full w-14 h-14 bg-white border-2 border-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-transform"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                    <button id="fc-shuffle" class="rounded-full w-14 h-14 bg-amber-50 border-2 border-amber-200 text-amber-600 flex items-center justify-center hover:bg-amber-100 active:scale-95 transition-transform"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+                    <button id="fc-next" class="rounded-full w-14 h-14 bg-white border-2 border-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-transform"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DICTIONARY SCREEN -->
+        <div id="screen-dictionary" class="screen hidden min-h-screen bg-gray-50 flex flex-col">
+            <div class="bg-white shadow p-4 flex items-center gap-4 sticky top-0 z-20">
+                <button onclick="app.showDashboard()" class="text-gray-500 hover:bg-gray-100 p-2 rounded-lg"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <h1 class="text-xl font-black text-gray-800 flex-1">TỪ ĐIỂN</h1>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                    <input type="text" id="dict-search" placeholder="Tìm kiếm..." class="pl-9 pr-4 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="container mx-auto p-4 max-w-5xl">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold tracking-wider border-b border-gray-100">
+                                <tr>
+                                    <th class="p-5">Gốc</th>
+                                    <th class="p-5">Reading</th>
+                                    <th class="p-5">Nghĩa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dict-body" class="divide-y divide-gray-100">
+                                <!-- Generated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL -->
+        <div id="modal-overlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-bounce-in">
+                <div class="flex items-center gap-2 text-rose-500 mb-2">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    <h3 id="modal-title" class="text-xl font-bold text-gray-800">Thông báo</h3>
+                </div>
+                <div id="modal-content" class="mb-6 text-gray-600 leading-relaxed">Nội dung...</div>
+                <div class="flex gap-3 justify-end">
+                    <button id="modal-btn-cancel" class="text-gray-500 hover:bg-gray-100 font-bold py-2 px-4 rounded-lg transition-colors">Hủy</button>
+                    <button id="modal-btn-confirm" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-md shadow-rose-200">OK</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- VICTORY OVERLAY (High Score) -->
+        <div id="victory-overlay" class="hidden fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 animate-fade-in">
+             <div class="bg-gradient-to-br from-yellow-300 to-orange-400 p-1 rounded-3xl shadow-2xl animate-bounce-in max-w-sm w-full">
+                 <div class="bg-white rounded-[20px] p-8 text-center">
+                     <div class="mb-4 inline-block p-4 rounded-full bg-yellow-100 text-yellow-500 animate-shake-victory">
+                         <i data-lucide="crown" class="w-16 h-16 fill-current"></i>
+                     </div>
+                     <h2 class="text-3xl font-black text-gray-800 mb-2">XUẤT SẮC!</h2>
+                     <p class="text-gray-500 mb-6" id="victory-message">Bạn đã phá kỷ lục của chính mình!</p>
+                     
+                     <div class="text-6xl font-black text-indigo-600 mb-2" id="victory-score">10/10</div>
+                     <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-8">Điểm số</div>
+                     
+                     <button onclick="app.closeVictoryModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-200">
+                         Tuyệt vời!
+                     </button>
+                 </div>
+             </div>
+        </div>
+
+        <!-- COMPLETION OVERLAY (Normal) -->
+        <div id="completion-overlay" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 animate-fade-in">
+             <div class="bg-gradient-to-br from-indigo-300 to-purple-400 p-1 rounded-3xl shadow-2xl animate-bounce-in max-w-sm w-full">
+                 <div class="bg-white rounded-[20px] p-8 text-center">
+                     <div class="mb-4 inline-block p-4 rounded-full bg-indigo-100 text-indigo-500 animate-pop">
+                         <i data-lucide="check-circle-2" class="w-16 h-16"></i>
+                     </div>
+                     <h2 class="text-2xl font-black text-gray-800 mb-2">HOÀN THÀNH!</h2>
+                     <p class="text-gray-500 mb-6">Bạn đã làm rất tốt. Hãy cố gắng phá kỷ lục lần sau nhé!</p>
+                     
+                     <div class="text-5xl font-black text-gray-700 mb-2" id="completion-score">8/10</div>
+                     <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-8">Điểm số</div>
+                     
+                     <button onclick="app.closeCompletionModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl transition-all active:scale-95">
+                         Về trang chủ
+                     </button>
+                 </div>
+             </div>
+        </div>
+
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        // --- DATA ---
+        const N5_VOCAB = [
+            { no: 1, kanji: "設計", reading: "せっけい", vn: "Thiết kế" },
+            { no: 2, kanji: "画面", reading: "がめん", vn: "Màn hình" },
+            { no: 3, kanji: "項目", reading: "こうもく", vn: "Item (Hạng mục)" },
+            { no: 4, kanji: "説明", reading: "せつめい", vn: "Giải thích" },
+            { no: 5, kanji: "初期", reading: "しょき", vn: "Khởi tạo, ban đầu" },
+            { no: 6, kanji: "使用", reading: "しよう", vn: "Sử dụng" },
+            { no: 7, kanji: "実行", reading: "じっこう", vn: "Thực thi" },
+            { no: 8, kanji: "取得", reading: "しゅとく", vn: "Lấy (Get)" },
+            { no: 9, kanji: "取消", reading: "とりけし", vn: "Huỷ bỏ" },
+            { no: 10, kanji: "変更", reading: "へんこう", vn: "Thay đổi" },
+            { no: 11, kanji: "登録", reading: "とうろく", vn: "Đăng ký" },
+            { no: 12, kanji: "確認", reading: "かくにん", vn: "Xác nhận" },
+            { no: 13, kanji: "修正", reading: "しゅうせい", vn: "Chỉnh sửa" },
+            { no: 14, kanji: "更新", reading: "こうしん", vn: "Cập nhật" },
+            { no: 15, kanji: "新規", reading: "しんき", vn: "Làm mới" },
+            { no: 16, kanji: "作成", reading: "さくせい", vn: "Tạo" },
+            { no: 17, kanji: "追加", reading: "ついか", vn: "Thêm" },
+            { no: 18, kanji: "入力", reading: "にゅうりょく", vn: "Nhập" },
+            { no: 19, kanji: "出力", reading: "しゅつりょく", vn: "Xuất" },
+            { no: 20, kanji: "押下", reading: "おうか", vn: "Nhấn (click)" },
+            { no: 21, kanji: "処理", reading: "しょり", vn: "Xử lý" },
+            { no: 22, kanji: "設定", reading: "せってい", vn: "Thiết lập" },
+            { no: 23, kanji: "起動", reading: "きどう", vn: "Khởi động" },
+            { no: 24, kanji: "行", reading: "ぎょう", vn: "Dòng" },
+            { no: 25, kanji: "桁", reading: "けた", vn: "Số chữ / số ký tự" }
+        ];
+
+        const N5_KANA = [
+            { no: 1, kana: "エラー", english: "Error (Lỗi)", vn: "Lỗi (Error)" },
+            { no: 2, kana: "データ", english: "Data", vn: "Dữ liệu (Data)" },
+            { no: 3, kana: "コード", english: "Code", vn: "Mã (Code)" },
+            { no: 4, kana: "ソース", english: "Source", vn: "Nguồn (Source)" },
+            { no: 5, kana: "リスト", english: "List", vn: "Danh sách (List)" },
+            { no: 6, kana: "テスト", english: "Test", vn: "Kiểm thử (Test)" },
+            { no: 7, kana: "マスタ", english: "Master", vn: "Master data" },
+            { no: 8, kana: "フラグ", english: "Flag", vn: "Cờ (Flag)" },
+            { no: 9, kana: "レベル", english: "Level", vn: "Cấp độ (Level)" },
+            { no: 10, kana: "ラベル", english: "Label", vn: "Nhãn (Label)" },
+            { no: 11, kana: "ユーザ", english: "User", vn: "Người dùng (User)" },
+            { no: 12, kana: "サーバー", english: "Server", vn: "Máy chủ (Server)" },
+            { no: 13, kana: "フロー", english: "Flow", vn: "Luồng (Flow)" },
+            { no: 14, kana: "サマリ", english: "Summary", vn: "Tóm tắt (Summary)" },
+            { no: 15, kana: "テーブル", english: "Table", vn: "Bảng (Table)" },
+            { no: 16, kana: "タイトル", english: "Title", vn: "Tiêu đề (Title)" },
+            { no: 17, kana: "ファイル", english: "File", vn: "Tập tin (File)" },
+            { no: 18, kana: "フィールド", english: "Field", vn: "Trường (Field)" },
+            { no: 19, kana: "フォルダ", english: "Folder", vn: "Thư mục (Folder)" },
+            { no: 20, kana: "チェック", english: "Check", vn: "Kiểm tra (Check)" },
+            { no: 21, kana: "レイアウト", english: "Layout", vn: "Bố cục (Layout)" },
+            { no: 22, kana: "システム", english: "System", vn: "Hệ thống (System)" },
+            { no: 23, kana: "プログラム", english: "Program", vn: "Chương trình (Program)" },
+            { no: 24, kana: "テキスト", english: "Text", vn: "Văn bản (Text)" },
+            { no: 25, kana: "ステータス", english: "Status", vn: "Trạng thái (Status)" },
+            { no: 26, kana: "ヘッダー", english: "Header", vn: "Header" },
+            { no: 27, kana: "プロセス", english: "Process", vn: "Quy trình (Process)" },
+            { no: 28, kana: "メッセージ", english: "Message", vn: "Thông báo (Message)" },
+            { no: 29, kana: "フォーマット", english: "Format", vn: "Định dạng (Format)" },
+            { no: 30, kana: "パターン", english: "Pattern", vn: "Mẫu (Pattern)" }
+        ];
+
+        const N4_MAIL = [
+            { no: 1, jp: "QAサイトにQ&A No.3、4、11、12、17～19の回答を記入致しましたので、連絡させていただきます。ご確認をお願い致します。", vn: "Tôi đã ghi câu trả lời cho Q&A số 3, 4, 11, 12, 17–19 trên site QA... Nhờ anh/chị xác nhận giúp." },
+            { no: 2, jp: "セットアップ業務の下記プログラムにて画面修正が発生いたしましたので、最新の画面帳票設計書を送付いたします。", vn: "Trong quá trình setup, chương trình bên dưới phát sinh chỉnh sửa màn hình nên tôi xin gửi bản thiết kế mới nhất." },
+            { no: 3, jp: "大変失礼致しましたが、先ほどプロジェクトのタイトルを誤って記載してしまいましたので、再送させて頂きます。", vn: "Thành thật xin lỗi vì lúc nãy tôi đã ghi sai tiêu đề project nên xin phép gửi lại." },
+            { no: 4, jp: "作業優先順位のご連絡が遅くなりまして申し訳ありません。現在お願いしております作業は、以下の優先順位で進めて頂けるでしょうか。", vn: "Xin lỗi vì thông báo thứ tự ưu tiên công việc bị chậm. Các công việc hiện tại có thể tiến hành theo thứ tự ưu tiên bên dưới được không?" },
+            { no: 5, jp: "作業が予定より遅くなってしまい申し訳ございませんでした。作業終了時点のVer7環境を御社FTPサーバーにアップロードいたしました。", vn: "Xin lỗi vì công việc bị trễ. Tôi đã upload môi trường Ver7 lên FTP server của quý công ty." }
+        ];
+
+        const N4_GRAMMAR = [
+            { pattern: "～を可能にする", vn: "Cho phép / Có khả năng" },
+            { pattern: "～を～にセットする", vn: "Set / Thiết lập ~ vào ~" },
+            { pattern: "～を～に追加する", vn: "Thêm ~ vào ~" },
+            { pattern: "～を～に変更する", vn: "Thay đổi ~ thành ~" },
+            { pattern: "～から外す", vn: "Loại bỏ khỏi ~" },
+            { pattern: "～から削除する", vn: "Xóa khỏi ~" },
+            { pattern: "～に戻す", vn: "Trả về / Quay lại" },
+            { pattern: "～に対して", vn: "Đối với / Liên quan đến" },
+            { pattern: "～を満たす", vn: "Thoả điều kiện" },
+            { pattern: "～をもとに", vn: "Dựa trên ~" }
+        ];
+
+        const N4_VOCAB = [
+            { jp: "設計", reading: "せっけい", vn: "Thiết kế" },
+            { jp: "画面", reading: "がめん", vn: "Màn hình" },
+            { jp: "項目", reading: "こうもく", vn: "Item" },
+            { jp: "初期", reading: "しょき", vn: "Khởi tạo" },
+            { jp: "実行", reading: "じっこう", vn: "Thực thi" },
+            { jp: "変更", reading: "へんこう", vn: "Thay đổi" },
+            { jp: "登録", reading: "とうろく", vn: "Đăng ký" },
+            { jp: "修正", reading: "しゅうせい", vn: "Chỉnh sửa" },
+            { jp: "更新", reading: "こうしん", vn: "Cập nhật" },
+            { jp: "追加", reading: "ついか", vn: "Thêm" },
+            { jp: "入力", reading: "にゅうりょく", vn: "Nhập" },
+            { jp: "出力", reading: "しゅつりょく", vn: "Xuất" },
+            { jp: "処理", reading: "しょり", vn: "Xử lý" },
+            { jp: "設定", reading: "せってい", vn: "Thiết lập" },
+            { jp: "起動", reading: "きどう", vn: "Khởi động" },
+            { jp: "会議", reading: "かいぎ", vn: "Cuộc họp" },
+            { jp: "会議室", reading: "かいぎしつ", vn: "Phòng họp" },
+            { jp: "予約", reading: "よやく", vn: "Đặt trước" },
+            { jp: "部屋", reading: "へや", vn: "Phòng" },
+            { jp: "入室", reading: "にゅうしつ", vn: "Vào phòng" },
+            { jp: "退室", reading: "たいしつ", vn: "Ra phòng" },
+            { jp: "注文書", reading: "ちゅうもんしょ", vn: "Đơn đặt hàng" },
+            { jp: "発注", reading: "はっちゅう", vn: "Đặt hàng" },
+            { jp: "受注", reading: "じゅちゅう", vn: "Nhận đơn" },
+            { jp: "契約", reading: "けいやく", vn: "Hợp đồng" },
+            { jp: "納品", reading: "のうひん", vn: "Giao hàng" },
+            { jp: "納期", reading: "のうき", vn: "Hạn giao" },
+            { jp: "売上", reading: "うりあげ", vn: "Doanh thu" },
+            { jp: "仕入", reading: "しいれ", vn: "Nhập hàng" },
+            { jp: "生産", reading: "せいさん", vn: "Sản xuất" }
+        ];
+
+        // --- NEW N4 DATA ---
+        const N4_NEW_GRAMMAR = [
+            { "no": 1, "japanese": "～を～とする / ～を～にする", "meaning_vn": "cho ~ là ~", "example": "一覧表の最大表示件数を略称とする。" },
+            { "no": 2, "japanese": "～を～にセットする / 設定する", "meaning_vn": "set / setting ~ vào ~", "example": "各項目...の値を該当セッションにセットする。" },
+            { "no": 3, "japanese": "～を～に(新規)追加する", "meaning_vn": "add thêm (mới) ~ vào ~", "example": "以下の内容を出力値に追加する。" },
+            { "no": 4, "japanese": "～を～に変更する / ～を～から～に変更する", "meaning_vn": "thay đổi ~ thành ~ / thay đổi ~ từ ~ thành ~", "example": "属性(eee)を0D-からADUに変更する。" },
+            { "no": 5, "japanese": "～を～から外す / ～から外す / ～から～を削除する", "meaning_vn": "tháo khỏi ~ / tháo ~ ra khỏi ~ / xóa ~ khỏi ~", "example": "計算対象から外す。" }
+        ];
+
+        const N4_NEW_BUSINESS = [
+            { "kanji": "会議", "hiragana": "かいぎ", "meaning_vn": "Cuộc họp" },
+            { "kanji": "会議室", "hiragana": "かいぎしつ", "meaning_vn": "Phòng họp" },
+            { "kanji": "予約", "hiragana": "よやく", "meaning_vn": "Đặt trước" },
+            { "kanji": "部屋", "hiragana": "へや", "meaning_vn": "Phòng" },
+            { "kanji": "入室", "hiragana": "にゅうしつ", "meaning_vn": "Vào phòng" },
+            { "kanji": "退室", "hiragana": "たいしつ", "meaning_vn": "Ra phòng" },
+            { "kanji": "注文書", "hiragana": "ちゅうもんしょ", "meaning_vn": "Đơn đặt hàng" },
+            { "kanji": "発注", "hiragana": "はっちゅう", "meaning_vn": "Đặt hàng (Outgoing)" },
+            { "kanji": "受注", "hiragana": "じゅちゅう", "meaning_vn": "Nhận đơn (Incoming)" },
+            { "kanji": "契約", "hiragana": "けいやく", "meaning_vn": "Hợp đồng" },
+            { "kanji": "納品", "hiragana": "のうひん", "meaning_vn": "Giao hàng (sản phẩm)" },
+            { "kanji": "納期", "hiragana": "のうき", "meaning_vn": "Hạn giao hàng" },
+            { "kanji": "売上", "hiragana": "うりあげ", "meaning_vn": "Doanh thu" },
+            { "kanji": "仕入", "hiragana": "しいれ", "meaning_vn": "Mua hàng/Nhập hàng" },
+            { "kanji": "生産", "hiragana": "せいさん", "meaning_vn": "Sản xuất" },
+            { "kanji": "作成", "hiragana": "さくせい", "meaning_vn": "Tạo (document, file)" },
+            { "kanji": "計上", "hiragana": "けいじょう", "meaning_vn": "Hạch toán/Ghi nhận" },
+            { "kanji": "請求", "hiragana": "せいきゅう", "meaning_vn": "Yêu cầu thanh toán (Claim)" },
+            { "kanji": "回答", "hiragana": "かいとう", "meaning_vn": "Trả lời" },
+            { "kanji": "確認", "hiragana": "かくにん", "meaning_vn": "Xác nhận" },
+            { "kanji": "承認", "hiragana": "しょうにん", "meaning_vn": "Phê duyệt (Approval)" },
+            { "kanji": "却下", "hiragana": "きゃっか", "meaning_vn": "Từ chối/Bác bỏ (Reject)" },
+            { "kanji": "取消", "hiragana": "とりけし", "meaning_vn": "Hủy bỏ (Cancel)" },
+            { "kanji": "完了", "hiragana": "かんりょう", "meaning_vn": "Hoàn thành" },
+            { "kanji": "在庫", "hiragana": "ざいこ", "meaning_vn": "Tồn kho" },
+            { "kanji": "棚卸", "hiragana": "たなおろし", "meaning_vn": "Kiểm kê" },
+            { "kanji": "倉庫", "hiragana": "そうこ", "meaning_vn": "Kho" },
+            { "kanji": "担当者", "hiragana": "たんとうしゃ", "meaning_vn": "Người phụ trách" },
+            { "kanji": "責任者", "hiragana": "せきにんしゃ", "meaning_vn": "Người chịu trách nhiệm" },
+            { "kanji": "管理者", "hiragana": "かんりしゃ", "meaning_vn": "Người quản lý (Admin)" },
+            { "kanji": "権限", "hiragana": "けんげん", "meaning_vn": "Quyền hạn" },
+            { "kanji": "許可", "hiragana": "きょか", "meaning_vn": "Cho phép" },
+            { "kanji": "禁止", "hiragana": "きんし", "meaning_vn": "Cấm" },
+            { "kanji": "規則", "hiragana": "きそく", "meaning_vn": "Quy tắc" },
+            { "kanji": "法律", "hiragana": "ほうりつ", "meaning_vn": "Pháp luật" },
+            { "kanji": "条件", "hiragana": "じょうけん", "meaning_vn": "Điều kiện" },
+            { "kanji": "場合", "hiragana": "ばあい", "meaning_vn": "Trường hợp" },
+            { "kanji": "状況", "hiragana": "じょうきょう", "meaning_vn": "Tình trạng/Bối cảnh" },
+            { "kanji": "状態", "hiragana": "じょうたい", "meaning_vn": "Trạng thái (State)" },
+            { "kanji": "現象", "hiragana": "げんしょう", "meaning_vn": "Hiện tượng" },
+            { "kanji": "理由", "hiragana": "りゆう", "meaning_vn": "Lý do" },
+            { "kanji": "原因", "hiragana": "げんいん", "meaning_vn": "Nguyên nhân" },
+            { "kanji": "結果", "hiragana": "けっか", "meaning_vn": "Kết quả" },
+            { "kanji": "方法", "hiragana": "ほうほう", "meaning_vn": "Phương pháp" },
+            { "kanji": "手段", "hiragana": "しゅだん", "meaning_vn": "Thủ đoạn/Cách thức" },
+            { "kanji": "目的", "hiragana": "もくてき", "meaning_vn": "Mục đích" },
+            { "kanji": "目標", "hiragana": "もくひょう", "meaning_vn": "Mục tiêu" },
+            { "kanji": "計画", "hiragana": "けいかく", "meaning_vn": "Kế hoạch" },
+            { "kanji": "予定", "hiragana": "よてい", "meaning_vn": "Dự định" },
+            { "kanji": "実績", "hiragana": "じっせき", "meaning_vn": "Thực tế/Thành tích" },
+            { "kanji": "予算", "hiragana": "よさん", "meaning_vn": "Ngân sách" },
+            { "kanji": "費用", "hiragana": "ひよう", "meaning_vn": "Chi phí" },
+            { "kanji": "経費", "hiragana": "けいひ", "meaning_vn": "Kinh phí" },
+            { "kanji": "コスト", "hiragana": "こすと", "meaning_vn": "Cost" },
+            { "kanji": "利益", "hiragana": "りえき", "meaning_vn": "Lợi nhuận" },
+            { "kanji": "損失", "hiragana": "そんしつ", "meaning_vn": "Tổn thất" },
+            { "kanji": "赤字", "hiragana": "あかじ", "meaning_vn": "Lỗ (Red letter)" },
+            { "kanji": "黒字", "hiragana": "くろじ", "meaning_vn": "Lãi (Black letter)" },
+            { "kanji": "金額", "hiragana": "きんがく", "meaning_vn": "Số tiền" },
+            { "kanji": "税込", "hiragana": "ぜいこみ", "meaning_vn": "Đã bao gồm thuế" },
+            { "kanji": "税抜", "hiragana": "ぜいぬき", "meaning_vn": "Chưa bao gồm thuế" },
+            { "kanji": "小計", "hiragana": "しょうけい", "meaning_vn": "Tổng phụ (Subtotal)" },
+            { "kanji": "合計", "hiragana": "ごうけい", "meaning_vn": "Tổng cộng (Total)" },
+            { "kanji": "差引", "hiragana": "さしひき", "meaning_vn": "Khấu trừ/Số dư" },
+            { "kanji": "残高", "hiragana": "ざんだか", "meaning_vn": "Số dư tài khoản" },
+            { "kanji": "振込", "hiragana": "ふりこみ", "meaning_vn": "Chuyển khoản" },
+            { "kanji": "手数料", "hiragana": "てすうりょう", "meaning_vn": "Phí dịch vụ" },
+            { "kanji": "領収書", "hiragana": "りょうしゅうしょ", "meaning_vn": "Hóa đơn biên lai" },
+            { "kanji": "請求書", "hiragana": "せいきゅうしょ", "meaning_vn": "Giấy yêu cầu thanh toán" },
+            { "kanji": "見積書", "hiragana": "みつもりしょ", "meaning_vn": "Bảng báo giá" },
+            { "kanji": "納品書", "hiragana": "のうひんしょ", "meaning_vn": "Phiếu giao hàng" },
+            { "kanji": "契約書", "hiragana": "けいやくしょ", "meaning_vn": "Bản hợp đồng" },
+            { "kanji": "仕様書", "hiragana": "しようしょ", "meaning_vn": "Tài liệu đặc tả (Spec)" },
+            { "kanji": "説明書", "hiragana": "せつめいしょ", "meaning_vn": "Tài liệu hướng dẫn" },
+            { "kanji": "報告書", "hiragana": "ほうこくしょ", "meaning_vn": "Báo cáo" },
+            { "kanji": "提案書", "hiragana": "ていあんしょ", "meaning_vn": "Bản đề xuất" },
+            { "kanji": "企画書", "hiragana": "きかくしょ", "meaning_vn": "Bản kế hoạch" }
+        ];
+
+        const N4_NEW_IT = [
+            { "kanji": "設計", "hiragana": "せっけい", "meaning_vn": "Thiết kế" },
+            { "kanji": "画面", "hiragana": "がめん", "meaning_vn": "Màn hình" },
+            { "kanji": "機能", "hiragana": "きのう", "meaning_vn": "Chức năng" },
+            { "kanji": "項目", "hiragana": "こうもく", "meaning_vn": "Item/Mục" },
+            { "kanji": "詳細", "hiragana": "しょうさい", "meaning_vn": "Chi tiết" },
+            { "kanji": "概要", "hiragana": "がいよう", "meaning_vn": "Khái quát/Overview" },
+            { "kanji": "背景", "hiragana": "はいけい", "meaning_vn": "Bối cảnh" },
+            { "kanji": "範囲", "hiragana": "はんい", "meaning_vn": "Phạm vi" },
+            { "kanji": "対象", "hiragana": "たいしょう", "meaning_vn": "Đối tượng" },
+            { "kanji": "例外", "hiragana": "れいがい", "meaning_vn": "Ngoại lệ (Exception)" },
+            { "kanji": "初期", "hiragana": "しょき", "meaning_vn": "Ban đầu/Khởi tạo" },
+            { "kanji": "使用", "hiragana": "しよう", "meaning_vn": "Sử dụng" },
+            { "kanji": "利用", "hiragana": "りよう", "meaning_vn": "Sử dụng (lợi dụng)" },
+            { "kanji": "運用", "hiragana": "うんよう", "meaning_vn": "Vận hành (Operation)" },
+            { "kanji": "保守", "hiragana": "ほしゅ", "meaning_vn": "Bảo trì" },
+            { "kanji": "開発", "hiragana": "かいはつ", "meaning_vn": "Phát triển (Dev)" },
+            { "kanji": "試験", "hiragana": "しけん", "meaning_vn": "Kiểm thử (Test)" },
+            { "kanji": "実行", "hiragana": "じっこう", "meaning_vn": "Thực thi (Run/Exec)" },
+            { "kanji": "停止", "hiragana": "ていし", "meaning_vn": "Dừng" },
+            { "kanji": "開始", "hiragana": "かいし", "meaning_vn": "Bắt đầu" },
+            { "kanji": "終了", "hiragana": "しゅうりょう", "meaning_vn": "Kết thúc" },
+            { "kanji": "中止", "hiragana": "ちゅうし", "meaning_vn": "Hủy bỏ/Ngừng giữa chừng" },
+            { "kanji": "中断", "hiragana": "ちゅうだん", "meaning_vn": "Gián đoạn" },
+            { "kanji": "再開", "hiragana": "さいかい", "meaning_vn": "Tái khởi động/Làm lại" },
+            { "kanji": "接続", "hiragana": "せつぞく", "meaning_vn": "Kết nối" },
+            { "kanji": "切断", "hiragana": "せつだん", "meaning_vn": "Ngắt kết nối" },
+            { "kanji": "通信", "hiragana": "つうしん", "meaning_vn": "Truyền thông/Giao tiếp" },
+            { "kanji": "送信", "hiragana": "そうしん", "meaning_vn": "Gửi (Send)" },
+            { "kanji": "受信", "hiragana": "じゅしん", "meaning_vn": "Nhận (Receive)" },
+            { "kanji": "転送", "hiragana": "てんそう", "meaning_vn": "Chuyển tiếp (Forward)" },
+            { "kanji": "返信", "hiragana": "へんしん", "meaning_vn": "Trả lời (Reply)" },
+            { "kanji": "取得", "hiragana": "しゅとく", "meaning_vn": "Lấy (Get)" },
+            { "kanji": "検索", "hiragana": "けんさく", "meaning_vn": "Tìm kiếm" },
+            { "kanji": "抽出", "hiragana": "ちゅうしゅつ", "meaning_vn": "Trích xuất" },
+            { "kanji": "登録", "hiragana": "とうろく", "meaning_vn": "Đăng ký" },
+            { "kanji": "修正", "hiragana": "しゅうせい", "meaning_vn": "Chỉnh sửa (Fix)" },
+            { "kanji": "変更", "hiragana": "へんこう", "meaning_vn": "Thay đổi (Change)" },
+            { "kanji": "更新", "hiragana": "こうしん", "meaning_vn": "Cập nhật (Update)" },
+            { "kanji": "削除", "hiragana": "さくじょ", "meaning_vn": "Xóa (Delete)" },
+            { "kanji": "追加", "hiragana": "ついか", "meaning_vn": "Thêm (Add)" },
+            { "kanji": "挿入", "hiragana": "そうにゅう", "meaning_vn": "Chèn (Insert)" },
+            { "kanji": "移動", "hiragana": "いどう", "meaning_vn": "Di chuyển" },
+            { "kanji": "複写", "hiragana": "ふくしゃ", "meaning_vn": "Sao chép (Copy)" },
+            { "kanji": "保存", "hiragana": "ほぞん", "meaning_vn": "Lưu (Save)" },
+            { "kanji": "破棄", "hiragana": "はき", "meaning_vn": "Hủy bỏ (Discard)" },
+            { "kanji": "入力", "hiragana": "にゅうりょく", "meaning_vn": "Nhập (Input)" },
+            { "kanji": "出力", "hiragana": "しゅつりょく", "meaning_vn": "Xuất (Output)" },
+            { "kanji": "印刷", "hiragana": "いんさつ", "meaning_vn": "In (Print)" },
+            { "kanji": "表示", "hiragana": "ひょうじ", "meaning_vn": "Hiển thị" },
+            { "kanji": "非表示", "hiragana": "ひひょうじ", "meaning_vn": "Ẩn (Hidden)" },
+            { "kanji": "選択", "hiragana": "せんたく", "meaning_vn": "Lựa chọn" },
+            { "kanji": "指定", "hiragana": "してい", "meaning_vn": "Chỉ định" },
+            { "kanji": "設定", "hiragana": "せってい", "meaning_vn": "Thiết lập (Setting)" },
+            { "kanji": "構成", "hiragana": "こうせい", "meaning_vn": "Cấu hình (Config)" },
+            { "kanji": "環境", "hiragana": "かんきょう", "meaning_vn": "Môi trường" },
+            { "kanji": "定義", "hiragana": "ていぎ", "meaning_vn": "Định nghĩa" },
+            { "kanji": "宣言", "hiragana": "せんげん", "meaning_vn": "Khai báo" },
+            { "kanji": "変数", "hiragana": "へんすう", "meaning_vn": "Biến số" },
+            { "kanji": "定数", "hiragana": "ていすう", "meaning_vn": "Hằng số" },
+            { "kanji": "引数", "hiragana": "ひきすう", "meaning_vn": "Tham số (Argument)" },
+            { "kanji": "戻り値", "hiragana": "もどりち", "meaning_vn": "Giá trị trả về" },
+            { "kanji": "関数", "hiragana": "かんすう", "meaning_vn": "Hàm (Function)" },
+            { "kanji": "処理", "hiragana": "しょり", "meaning_vn": "Xử lý" },
+            { "kanji": "計算", "hiragana": "けいさん", "meaning_vn": "Tính toán" },
+            { "kanji": "演算", "hiragana": "えんざん", "meaning_vn": "Phép toán" },
+            { "kanji": "比較", "hiragana": "ひかく", "meaning_vn": "So sánh" },
+            { "kanji": "制御", "hiragana": "せいぎょ", "meaning_vn": "Điều khiển (Control)" },
+            { "kanji": "構造", "hiragana": "こうぞう", "meaning_vn": "Cấu trúc" },
+            { "kanji": "階層", "hiragana": "かいそう", "meaning_vn": "Phân tầng (Hierarchy)" },
+            { "kanji": "連携", "hiragana": "れんけい", "meaning_vn": "Liên kết/Phối hợp" },
+            { "kanji": "統合", "hiragana": "とうごう", "meaning_vn": "Tích hợp" },
+            { "kanji": "分離", "hiragana": "ぶんり", "meaning_vn": "Tách biệt" },
+            { "kanji": "分割", "hiragana": "ぶんかつ", "meaning_vn": "Chia nhỏ" },
+            { "kanji": "共通", "hiragana": "きょうつう", "meaning_vn": "Chung/Common" },
+            { "kanji": "個別", "hiragana": "こべつ", "meaning_vn": "Riêng biệt" },
+            { "kanji": "既存", "hiragana": "きそん", "meaning_vn": "Đã có/Hiện tại" },
+            { "kanji": "新規", "hiragana": "しんき", "meaning_vn": "Mới (New)" },
+            { "kanji": "最大", "hiragana": "さいだい", "meaning_vn": "Tối đa" },
+            { "kanji": "最小", "hiragana": "さいしょう", "meaning_vn": "Tối thiểu" },
+            { "kanji": "平均", "hiragana": "へいきん", "meaning_vn": "Trung bình" },
+            { "kanji": "合計", "hiragana": "ごうけい", "meaning_vn": "Tổng cộng" },
+            { "kanji": "件数", "hiragana": "けんすう", "meaning_vn": "Số lượng (bản ghi)" },
+            { "kanji": "回数", "hiragana": "かいすう", "meaning_vn": "Số lần" },
+            { "kanji": "番号", "hiragana": "ばんごう", "meaning_vn": "Số (No.)" },
+            { "kanji": "日付", "hiragana": "ひづけ", "meaning_vn": "Ngày tháng" },
+            { "kanji": "時刻", "hiragana": "じこく", "meaning_vn": "Thời khắc" },
+            { "kanji": "期間", "hiragana": "きかん", "meaning_vn": "Khoảng thời gian" },
+            { "kanji": "時間", "hiragana": "じかん", "meaning_vn": "Thời gian" }
+        ];
+
+        // --- APP LOGIC ---
+        
+        class JapaneseApp {
+            constructor() {
+                // Initial State
+                this.state = {
+                    currentUser: null,
+                    users: JSON.parse(localStorage.getItem('it_jp_users_profile') || '[]'),
+                    screen: 'login', 
+                    game: {
+                        active: false,
+                        questions: [],
+                        currentIndex: 0,
+                        score: 0,
+                        timer: 15,
+                        interval: null,
+                        mode: null,
+                        level: null,
+                        timerEnabled: true
+                    },
+                    flashcard: { list: [], index: 0, flipped: false },
+                    scores: JSON.parse(localStorage.getItem('it_jp_scores') || '[]'),
+                    leaderboardFilter: 'all',
+                    selectedAvatar: null,
+                    pendingGame: null
+                };
+
+                // Cute Avatars
+                this.avatars = [
+                    { icon: '🐱', color: 'bg-orange-100' },
+                    { icon: '🐶', color: 'bg-blue-100' },
+                    { icon: '🐰', color: 'bg-pink-100' },
+                    { icon: '🐼', color: 'bg-gray-100' },
+                    { icon: '🦊', color: 'bg-red-100' },
+                    { icon: '🐯', color: 'bg-yellow-100' },
+                    { icon: '🐸', color: 'bg-green-100' },
+                    { icon: '🐷', color: 'bg-rose-100' },
+                    { icon: '🐨', color: 'bg-slate-200' },
+                    { icon: '🐣', color: 'bg-yellow-50' }
+                ];
+
+                // Remove loading immediately since we are local
+                setTimeout(() => this.finishLoading(), 500);
+
+                this.bindEvents();
+            }
+
+            finishLoading() {
+                document.getElementById('screen-loading').classList.add('hidden');
+                // Check local storage for last logged in user
+                const lastUser = localStorage.getItem('it_jp_username');
+                
+                if (lastUser && this.state.users.find(u => u.name === lastUser)) {
+                    const userObj = this.state.users.find(u => u.name === lastUser);
+                    this.login(userObj);
+                } else {
+                    this.renderLoginScreen();
+                    this.showScreen('screen-login');
+                }
+            }
+
+            // --- USER MANAGEMENT ---
+            
+            renderLoginScreen() {
+                const hasUsers = this.state.users.length > 0;
+                const viewList = document.getElementById('login-view-list');
+                const viewCreate = document.getElementById('login-view-create');
+                const btnCancel = document.getElementById('btn-cancel-create');
+
+                if (hasUsers) {
+                    viewList.classList.remove('hidden');
+                    viewCreate.classList.add('hidden');
+                    btnCancel.classList.remove('hidden'); // Allow cancel if users exist
+                    this.renderUserList();
+                } else {
+                    viewList.classList.add('hidden');
+                    viewCreate.classList.remove('hidden');
+                    btnCancel.classList.add('hidden'); // Cannot cancel if no users
+                    this.renderAvatarSelection();
+                }
+            }
+
+            renderUserList() {
+                const container = document.getElementById('user-list-grid');
+                container.innerHTML = this.state.users.map(u => `
+                    <div class="user-card cursor-pointer bg-gray-50 hover:bg-white hover:shadow-md border border-gray-100 rounded-xl p-3 flex flex-col items-center gap-2 transition-all active:scale-95" onclick="app.loginByName('${u.name}')">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl ${u.color || 'bg-gray-100'}">
+                            ${u.avatar || '👤'}
+                        </div>
+                        <span class="font-bold text-gray-700 text-sm truncate w-full text-center">${u.name}</span>
+                    </div>
+                `).join('');
+            }
+
+            renderAvatarSelection() {
+                const container = document.getElementById('avatar-grid');
+                container.innerHTML = this.avatars.map((a, idx) => `
+                    <div class="avatar-option cursor-pointer rounded-xl aspect-square flex items-center justify-center text-2xl border-2 border-transparent hover:bg-gray-50 transition-all ${a.color}" 
+                         onclick="app.selectAvatar(${idx}, this)">
+                        ${a.icon}
+                    </div>
+                `).join('');
+                this.state.selectedAvatar = null;
+            }
+
+            selectAvatar(idx, el) {
+                document.querySelectorAll('.avatar-option').forEach(e => e.classList.remove('selected', 'ring-2', 'ring-indigo-400'));
+                el.classList.add('selected', 'ring-2', 'ring-indigo-400');
+                this.state.selectedAvatar = this.avatars[idx];
+            }
+
+            showCreateUser() {
+                document.getElementById('login-view-list').classList.add('hidden');
+                document.getElementById('login-view-create').classList.remove('hidden');
+                document.getElementById('create-user-input').value = '';
+                this.renderAvatarSelection();
+            }
+
+            cancelCreateUser() {
+                this.renderLoginScreen();
+            }
+
+            createUser() {
+                const name = document.getElementById('create-user-input').value.trim();
+                const avatar = this.state.selectedAvatar;
+
+                if (!name) {
+                    alert("Vui lòng nhập tên!");
+                    return;
+                }
+                if (!avatar) {
+                    alert("Vui lòng chọn một Avatar!");
+                    return;
+                }
+                
+                // Check duplicate
+                if (this.state.users.some(u => u.name === name)) {
+                    alert("Tên này đã tồn tại, vui lòng chọn tên khác!");
+                    return;
+                }
+
+                const newUser = {
+                    name: name,
+                    avatar: avatar.icon,
+                    color: avatar.color
+                };
+
+                this.state.users.push(newUser);
+                localStorage.setItem('it_jp_users_profile', JSON.stringify(this.state.users));
+                
+                this.login(newUser);
+            }
+
+            loginByName(name) {
+                const user = this.state.users.find(u => u.name === name);
+                if (user) this.login(user);
+            }
+
+            login(user) {
+                this.state.currentUser = user;
+                localStorage.setItem('it_jp_username', user.name);
+                
+                // Update Dashboard UI
+                document.getElementById('user-display-name').textContent = user.name;
+                const avatarEl = document.getElementById('dashboard-avatar');
+                avatarEl.textContent = user.avatar;
+                avatarEl.className = `w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-lg ${user.color}`;
+
+                this.showDashboard();
+            }
+
+            logout() {
+                this.state.currentUser = null;
+                localStorage.removeItem('it_jp_username');
+                this.renderLoginScreen();
+                this.showScreen('screen-login');
+            }
+
+            // --- NAVIGATION ---
+            showScreen(id) {
+                document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
+                document.getElementById(id).classList.remove('hidden');
+                window.scrollTo(0,0);
+                this.state.screen = id;
+            }
+
+            showDashboard() {
+                if (!this.state.currentUser) return;
+                this.loadLeaderboard();
+                this.showScreen('screen-dashboard');
+            }
+
+            // --- LEADERBOARD & FILTER ---
+            loadLeaderboard() {
+                const filter = this.state.leaderboardFilter;
+                
+                // Filter Logic
+                let filteredData = this.state.scores.filter(s => {
+                    if (filter === 'all') return true;
+                    // Format in data: N5, jp_vn -> we match with value e.g "N5_jp_vn"
+                    const entryKey = `${s.level}_${s.mode}`;
+                    return entryKey === filter;
+                });
+
+                // Sort Descending
+                filteredData.sort((a, b) => b.score - a.score);
+                
+                // Take top 50
+                const data = filteredData.slice(0, 50);
+
+                const container = document.getElementById('leaderboard-container');
+                
+                if (data.length === 0) {
+                    container.innerHTML = `<p class="text-center text-gray-400 py-4 italic">Chưa có dữ liệu cho mục này.</p>`;
+                } else {
+                    container.innerHTML = data.map((s, idx) => `
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${idx < 3 ? 'bg-yellow-400' : 'bg-gray-300'}">${idx + 1}</div>
+                                <div>
+                                    <p class="font-bold text-gray-700 text-sm">${s.userName}</p>
+                                    <p class="text-[10px] text-gray-400 uppercase font-bold text-indigo-400">${this.getModeLabel(s.level, s.mode)}</p>
+                                </div>
+                            </div>
+                            <span class="font-black text-indigo-600">${s.score}/${s.total}</span>
+                        </div>
+                    `).join('');
+                }
+                lucide.createIcons();
+                
+                // Update Total Count (Total exams taken by user, regardless of filter)
+                const userScores = this.state.scores.filter(s => s.userName === this.state.currentUser.name);
+                document.getElementById('user-score-count').innerText = userScores.length;
+            }
+
+            filterLeaderboard(value) {
+                this.state.leaderboardFilter = value;
+                this.loadLeaderboard();
+            }
+
+            getModeLabel(level, mode) {
+                if (level === 'All') return 'Tổng hợp 100 câu';
+                
+                const map = { 
+                    'jp_vn': 'Nhật ➜ Việt', 
+                    'vn_jp': 'Việt ➜ Nhật', 
+                    'kanji_hira': 'Kanji ➜ Hiragana', 
+                    'hira_kanji': 'Hiragana ➜ Kanji',
+                    'mixed': 'Trộn N5 & N4'
+                };
+                return `${level} • ${map[mode] || mode}`;
+            }
+
+            // --- DICTIONARY ---
+            showDictionary() {
+                this.renderDictionary();
+                this.showScreen('screen-dictionary');
+            }
+
+            renderDictionary(filter = '') {
+                // Combine OLD and NEW data
+                const allData = [
+                    ...N5_VOCAB, 
+                    ...N5_KANA, 
+                    ...N4_VOCAB, 
+                    ...N4_MAIL, 
+                    ...N4_GRAMMAR,
+                    // New N4 Data mappings for dictionary
+                    ...N4_NEW_BUSINESS.map(v => ({ kanji: v.kanji, reading: v.hiragana, vn: v.meaning_vn })),
+                    ...N4_NEW_IT.map(v => ({ kanji: v.kanji, reading: v.hiragana, vn: v.meaning_vn })),
+                    ...N4_NEW_GRAMMAR.map(g => ({ kanji: g.japanese, vn: g.meaning_vn, reading: 'Grammar' }))
+                ];
+
+                const tbody = document.getElementById('dict-body');
+                const term = filter.toLowerCase();
+                
+                const filtered = allData.filter(item => {
+                     const t1 = (item.kanji || item.kana || item.pattern || item.jp || '').toLowerCase();
+                     const t2 = (item.reading || item.english || '').toLowerCase();
+                     const t3 = (item.vn || '').toLowerCase();
+                     return t1.includes(term) || t2.includes(term) || t3.includes(term);
+                });
+
+                tbody.innerHTML = filtered.map(item => `
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                       <td class="p-5 font-black text-gray-800">${item.kanji || item.kana || item.pattern || item.jp}</td>
+                       <td class="p-5 text-blue-500">${item.reading || item.english || '-'}</td>
+                       <td class="p-5 text-gray-600">${item.vn}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // --- GAME LOGIC ---
+            
+            // New: Open Config Modal
+            openGameConfig(level, mode) {
+                this.state.pendingGame = { level, mode };
+                
+                // Update Modal UI
+                const title = this.getModeTitle(mode);
+                document.getElementById('config-mode-name').textContent = level === 'All' ? title : `${level} - ${title}`;
+                
+                // Reset Toggle to ON by default
+                document.getElementById('config-timer-toggle').checked = true;
+                
+                document.getElementById('modal-game-config').classList.remove('hidden');
+            }
+
+            // New: Confirm start from modal
+            confirmStartGame() {
+                if (!this.state.pendingGame) return;
+                
+                const timerEnabled = document.getElementById('config-timer-toggle').checked;
+                this.startGame(this.state.pendingGame.level, this.state.pendingGame.mode, timerEnabled);
+                
+                document.getElementById('modal-game-config').classList.add('hidden');
+                this.state.pendingGame = null;
+            }
+
+            startGame(level, mode, timerEnabled = true) {
+                this.state.game.level = level;
+                this.state.game.mode = mode;
+                this.state.game.timerEnabled = timerEnabled; // Set timer config
+                this.state.game.questions = this.generateQuestions(level, mode);
+                this.state.game.currentIndex = 0;
+                this.state.game.score = 0;
+                this.state.game.active = true;
+                
+                // UI update
+                document.getElementById('game-mode-title').textContent = this.getModeTitle(mode);
+                this.showScreen('screen-game');
+                this.renderQuestion();
+            }
+
+            getModeTitle(mode) {
+                if (mode === 'mixed') return 'Tổng hợp N5 & N4';
+                const map = { 'jp_vn': 'Nhật ➜ Việt', 'vn_jp': 'Việt ➜ Nhật', 'kanji_hira': 'Kanji ➜ Hiragana', 'hira_kanji': 'Hiragana ➜ Kanji' };
+                return map[mode] || mode;
+            }
+
+            generateQuestions(level, mode) {
+                let pool = [];
+                let limit = 10;
+
+                // --- DATA MAPPING HELPERS ---
+                // Helper to map the new N4 structure to the old standard {kanji, reading, vn}
+                const mapNewN4Vocab = (list) => list.map(v => ({ kanji: v.kanji, reading: v.hiragana, vn: v.meaning_vn }));
+                const mapNewN4Grammar = (list) => list.map(g => ({ kanji: g.japanese, vn: g.meaning_vn, reading: 'Grammar', isLong: true }));
+
+                if (level === 'All' && mode === 'mixed') {
+                    // Combine ALL sources (Old + New)
+                    pool = [
+                        ...N5_VOCAB, 
+                        ...N5_KANA.map(k => ({kanji: k.kana, reading: k.kana, vn: k.vn})),
+                        ...N4_VOCAB.map(v => ({...v, kanji: v.jp})),
+                        ...N4_MAIL.map(m => ({kanji: m.jp, vn: m.vn, reading: 'Mail Sample', isLong: true})), 
+                        ...N4_GRAMMAR.map(g => ({kanji: g.pattern, vn: g.vn, reading: 'Grammar', isLong: true})),
+                        // ADD NEW DATA HERE
+                        ...mapNewN4Vocab(N4_NEW_BUSINESS),
+                        ...mapNewN4Vocab(N4_NEW_IT),
+                        ...mapNewN4Grammar(N4_NEW_GRAMMAR)
+                    ];
+                    limit = 100;
+                }
+                else if (level === 'N5') {
+                    pool = [
+                        ...N5_VOCAB, 
+                        ...N5_KANA.map(k => ({...k, kanji: k.kana, reading: k.kana, isKatakana: true}))
+                    ];
+                } else {
+                    // N4 Level (Old + New Data merged for better experience)
+                    pool = [
+                        ...N4_VOCAB.map(v => ({ ...v, kanji: v.jp })), 
+                        ...N4_MAIL.map(m => ({kanji: m.jp, vn: m.vn, reading: 'Mail Sample', isLong: true})), 
+                        ...N4_GRAMMAR.map(g => ({kanji: g.pattern, vn: g.vn, reading: 'Grammar', isLong: true})),
+                         // ADD NEW DATA HERE
+                        ...mapNewN4Vocab(N4_NEW_BUSINESS),
+                        ...mapNewN4Vocab(N4_NEW_IT),
+                        ...mapNewN4Grammar(N4_NEW_GRAMMAR)
+                    ];
+                }
+
+                // Filtering based on mode (Only for specific modes, mixed skips this)
+                if (mode === 'kanji_hira' || mode === 'hira_kanji') {
+                    pool = pool.filter(i => !i.isKatakana && !i.isLong && i.kanji && i.reading && i.kanji !== i.reading);
+                }
+
+                // Randomize Pool
+                pool.sort(() => 0.5 - Math.random());
+                
+                // Select Items
+                const count = Math.min(pool.length, limit);
+                const items = pool.slice(0, count);
+
+                return items.map(item => {
+                    let q, a, distractors;
+                    
+                    const getDis = (field) => {
+                        return pool
+                            .filter(i => i !== item && i[field])
+                            .sort(() => 0.5 - Math.random())
+                            .slice(0, 3)
+                            .map(i => i[field]);
+                    };
+
+                    if (mode === 'mixed') {
+                         // Randomize question type for each item in mixed mode
+                         const type = Math.random();
+                         if (item.isLong) {
+                             // Always JP -> VN for long text
+                             q = item.kanji; a = item.vn; distractors = getDis('vn');
+                         } else if (type < 0.33) {
+                             // JP -> VN
+                             q = item.kanji; a = item.vn; distractors = getDis('vn');
+                         } else if (type < 0.66) {
+                             // VN -> JP
+                             q = item.vn; a = item.kanji; distractors = getDis('kanji');
+                         } else {
+                             // Reading check (Kanji -> Hira)
+                             q = item.kanji; a = item.reading; distractors = getDis('reading');
+                         }
+                    } 
+                    else if (mode === 'jp_vn') {
+                        q = item.kanji; a = item.vn; distractors = getDis('vn');
+                    } else if (mode === 'vn_jp') {
+                        q = item.vn; a = item.kanji; distractors = getDis('kanji');
+                    } else if (mode === 'kanji_hira') {
+                        q = item.kanji; a = item.reading; distractors = getDis('reading');
+                    } else if (mode === 'hira_kanji') {
+                        q = item.reading; a = item.kanji; distractors = getDis('kanji');
+                    }
+                    
+                    // Safety check
+                    if (!q || !a || distractors.length < 3) return null;
+
+                    return { 
+                        q, a, 
+                        opts: [a, ...distractors].sort(() => 0.5 - Math.random()),
+                        explain: `${item.kanji} ➜ ${item.vn}`
+                    };
+                }).filter(q => q !== null);
+            }
+
+            renderQuestion() {
+                const g = this.state.game;
+                const q = g.questions[g.currentIndex];
+                
+                // Update UI
+                document.getElementById('game-progress').textContent = `${g.currentIndex + 1}/${g.questions.length}`;
+                document.getElementById('question-text').textContent = q.q;
+                
+                const grid = document.getElementById('answers-grid');
+                grid.innerHTML = q.opts.map(opt => `
+                    <button class="answer-btn h-20 text-lg md:text-xl font-bold text-gray-600 bg-white border-2 border-gray-200 rounded-xl hover:text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50 transition-all active:scale-[0.98] shadow-sm overflow-hidden p-2 leading-tight">
+                        ${opt}
+                    </button>
+                `).join('');
+
+                // Bind click
+                grid.querySelectorAll('.answer-btn').forEach(btn => {
+                    btn.onclick = () => this.handleAnswer(btn.innerText.trim());
+                });
+
+                // Reset Timer
+                this.startTimer();
+                
+                // Hide feedback
+                document.getElementById('feedback-overlay').classList.add('hidden');
+            }
+
+            startTimer() {
+                if (this.state.game.interval) clearInterval(this.state.game.interval);
+                
+                const bar = document.getElementById('timer-bar');
+                
+                // Handle Disable Timer Logic
+                if (!this.state.game.timerEnabled) {
+                    bar.style.width = '100%';
+                    bar.classList.remove('bg-blue-500', 'bg-red-500');
+                    bar.classList.add('bg-gray-300'); // Grey bar to indicate no timer
+                    return; // EXIT FUNCTION, NO INTERVAL
+                }
+
+                // Standard Timer Logic
+                this.state.game.timer = 15;
+                bar.classList.remove('bg-gray-300');
+                
+                const updateBar = () => {
+                    const pct = (this.state.game.timer / 15) * 100;
+                    bar.style.width = `${pct}%`;
+                    if (this.state.game.timer < 5) {
+                        bar.classList.remove('bg-blue-500');
+                        bar.classList.add('bg-red-500');
+                    } else {
+                        bar.classList.add('bg-blue-500');
+                        bar.classList.remove('bg-red-500');
+                    }
+                };
+                updateBar();
+
+                this.state.game.interval = setInterval(() => {
+                    this.state.game.timer--;
+                    updateBar();
+                    if (this.state.game.timer <= 0) {
+                        this.playSound('wrong');
+                        this.handleAnswer("___TIMEOUT___");
+                    }
+                }, 1000);
+            }
+
+            handleAnswer(selected) {
+                if (!this.state.game.active) return;
+                clearInterval(this.state.game.interval);
+                
+                const g = this.state.game;
+                const q = g.questions[g.currentIndex];
+                const isCorrect = selected === q.a;
+
+                // Show Feedback
+                const overlay = document.getElementById('feedback-overlay');
+                const content = document.getElementById('feedback-content');
+                overlay.classList.remove('hidden');
+
+                if (isCorrect) {
+                    this.playSound('correct');
+                    g.score++;
+                    content.innerHTML = `
+                        <div class="flex flex-col items-center text-emerald-500 animate-bounce">
+                            <!-- Raw SVG for Check Circle -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2 text-emerald-500 fill-current text-white"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            <span class="font-black text-2xl">ĐÚNG!</span>
+                        </div>
+                    `;
+                } else {
+                    this.playSound('wrong');
+                    content.innerHTML = `
+                        <div class="flex flex-col items-center text-rose-500">
+                            <!-- Raw SVG for X Circle -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2 fill-current text-white animate-pulse"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                            <span class="font-black text-2xl mb-1">SAI!</span>
+                            <div class="bg-rose-50 px-4 py-2 rounded-lg text-rose-700 text-sm font-bold">Đáp án: ${q.a}</div>
+                        </div>
+                    `;
+                }
+                
+                // Next Q
+                setTimeout(() => {
+                    if (g.currentIndex < g.questions.length - 1) {
+                        g.currentIndex++;
+                        this.renderQuestion();
+                    } else {
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+
+            checkHighScore(currentScore, level, mode) {
+                // Filter all scores for current user AND current mode AND current level
+                const history = this.state.scores.filter(s => 
+                    s.userName === this.state.currentUser.name && 
+                    s.level === level && 
+                    s.mode === mode
+                );
+
+                // Requirement: Only trigger if there IS history and score is better
+                if (history.length === 0) return false; 
+
+                // Find max previous score
+                const maxPrevious = history.reduce((max, s) => Math.max(max, s.score), 0);
+                
+                return currentScore > maxPrevious;
+            }
+
+            async endGame() {
+                const g = this.state.game;
+                g.active = false;
+                
+                // Check High Score BEFORE pushing new entry
+                const isHighScore = this.checkHighScore(g.score, g.level, g.mode);
+                const isPerfect = g.score === g.questions.length;
+
+                // Save to Local Storage
+                const newEntry = {
+                    userName: this.state.currentUser.name,
+                    level: g.level,
+                    mode: g.mode,
+                    score: g.score,
+                    total: g.questions.length,
+                    timestamp: new Date().toISOString()
+                };
+
+                this.state.scores.push(newEntry);
+                
+                localStorage.setItem('it_jp_scores', JSON.stringify(this.state.scores));
+
+                // TRIGGER EFFECTS
+                if (isHighScore || isPerfect) {
+                    this.playSound('win');
+                    // Intense Confetti for High Score
+                    this.triggerConfetti({ intense: true });
+                    
+                    if (isHighScore) {
+                        document.getElementById('victory-message').innerText = "Bạn đã phá kỷ lục của chính mình!";
+                    } else {
+                        document.getElementById('victory-message').innerText = "Điểm tuyệt đối!";
+                    }
+                    
+                    document.getElementById('victory-score').innerText = `${g.score}/${g.questions.length}`;
+                    document.getElementById('victory-overlay').classList.remove('hidden');
+                } else {
+                    this.playSound('win');
+                    // Mild Confetti for Completion
+                    this.triggerConfetti({ intense: false });
+                    
+                    document.getElementById('completion-score').innerText = `${g.score}/${g.questions.length}`;
+                    document.getElementById('completion-overlay').classList.remove('hidden');
+                }
+            }
+            
+            closeVictoryModal() {
+                document.getElementById('victory-overlay').classList.add('hidden');
+                this.showDashboard();
+            }
+
+            closeCompletionModal() {
+                document.getElementById('completion-overlay').classList.add('hidden');
+                this.showDashboard();
+            }
+
+            triggerConfetti(options = { intense: false }) {
+                if (typeof confetti === 'function') {
+                    if (options.intense) {
+                        // Intense: Multi-cannon, longer
+                        const duration = 3000;
+                        const end = Date.now() + duration;
+
+                        (function frame() {
+                            confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#6366f1', '#fbbf24', '#f43f5e'] });
+                            confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#6366f1', '#fbbf24', '#f43f5e'] });
+                            if (Date.now() < end) requestAnimationFrame(frame);
+                        }());
+                    } else {
+                        // Mild: Single burst
+                        confetti({
+                            particleCount: 100,
+                            spread: 70,
+                            origin: { y: 0.6 },
+                            colors: ['#a855f7', '#3b82f6', '#10b981']
+                        });
+                    }
+                }
+            }
+
+            // --- FLASHCARD LOGIC ---
+            startFlashcard(level) {
+                // Update Select Box
+                const select = document.getElementById('fc-level-select');
+                if(select) select.value = level;
+                
+                this.loadFlashcardData(level);
+                this.showScreen('screen-flashcard');
+            }
+
+            loadFlashcardData(level) {
+                let list;
+                
+                // Helper mapping new N4 data to flashcard format
+                const mapNewN4Vocab = (list) => list.map(v => ({ kanji: v.kanji, reading: v.hiragana, vn: v.meaning_vn }));
+
+                if (level === 'N5') {
+                    list = [...N5_VOCAB];
+                } else {
+                    // N4 Flashcards now include new data
+                    list = [
+                        ...N4_VOCAB.map(v => ({ ...v, kanji: v.jp })),
+                        ...mapNewN4Vocab(N4_NEW_BUSINESS),
+                        ...mapNewN4Vocab(N4_NEW_IT)
+                    ];
+                }
+                
+                this.state.flashcard.list = list.sort(() => 0.5 - Math.random());
+                this.state.flashcard.index = 0;
+                this.state.flashcard.flipped = false;
+                this.renderFlashcard();
+            }
+
+            renderFlashcard() {
+                const f = this.state.flashcard;
+                if (!f.list || f.list.length === 0) return;
+
+                const card = f.list[f.index];
+                
+                // Reset Flip
+                f.flipped = false;
+                document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+
+                // Update content
+                document.getElementById('flashcard-count').innerText = `${f.index + 1} / ${f.list.length}`;
+                document.getElementById('fc-front-text').innerText = card.kanji || card.jp;
+                document.getElementById('fc-back-reading').innerText = card.reading;
+                document.getElementById('fc-back-meaning').innerText = card.vn;
+            }
+
+            toggleFlashcard() {
+                this.state.flashcard.flipped = !this.state.flashcard.flipped;
+                const el = document.getElementById('flashcard-inner');
+                if (this.state.flashcard.flipped) {
+                    el.classList.add('rotate-y-180');
+                    this.playSound('flip');
+                } else {
+                    el.classList.remove('rotate-y-180');
+                    this.playSound('flip');
+                }
+            }
+
+            // --- EVENTS ---
+            bindEvents() {
+                // User Create Events
+                document.getElementById('btn-show-create').onclick = () => this.showCreateUser();
+                document.getElementById('btn-cancel-create').onclick = () => this.cancelCreateUser();
+                document.getElementById('btn-confirm-create').onclick = () => this.createUser();
+
+                // Logout
+                document.getElementById('btn-logout').onclick = () => this.logout();
+                
+                // Config Modal Events
+                document.getElementById('btn-start-configured-game').onclick = () => this.confirmStartGame();
+
+                // Game Quit
+                document.getElementById('btn-quit-game').onclick = () => this.showModal("Thoát bài kiểm tra?", "Kết quả sẽ không được lưu.", () => {
+                    clearInterval(this.state.game.interval);
+                    this.showDashboard();
+                });
+
+                // Dictionary Search
+                document.getElementById('dict-search').oninput = (e) => this.renderDictionary(e.target.value);
+
+                // Flashcard Controls
+                document.getElementById('flashcard-container').onclick = () => this.toggleFlashcard();
+                document.getElementById('fc-next').onclick = () => {
+                    const f = this.state.flashcard;
+                    if (f.index < f.list.length - 1) { f.index++; this.renderFlashcard(); }
+                };
+                document.getElementById('fc-prev').onclick = () => {
+                    const f = this.state.flashcard;
+                    if (f.index > 0) { f.index--; this.renderFlashcard(); }
+                };
+                document.getElementById('fc-shuffle').onclick = () => {
+                    const f = this.state.flashcard;
+                    f.list.sort(() => 0.5 - Math.random());
+                    f.index = 0;
+                    this.renderFlashcard();
+                };
+                
+                // Flashcard Level Selector Event
+                document.getElementById('fc-level-select').onchange = (e) => {
+                    this.loadFlashcardData(e.target.value);
+                };
+
+                // Modal
+                document.getElementById('modal-btn-cancel').onclick = () => document.getElementById('modal-overlay').classList.add('hidden');
+            }
+
+            showModal(title, text, onConfirm) {
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-content').innerText = text;
+                const overlay = document.getElementById('modal-overlay');
+                overlay.classList.remove('hidden');
+                
+                const btn = document.getElementById('modal-btn-confirm');
+                btn.onclick = () => {
+                    onConfirm();
+                    overlay.classList.add('hidden');
+                };
+            }
+
+            playSound(type) {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gn = ctx.createGain();
+                osc.connect(gn);
+                gn.connect(ctx.destination);
+                const t = ctx.currentTime;
+
+                if (type === 'correct') {
+                    osc.frequency.setValueAtTime(500, t); osc.frequency.exponentialRampToValueAtTime(1000, t + 0.1);
+                    gn.gain.setValueAtTime(0.1, t); gn.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                    osc.start(t); osc.stop(t + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, t); osc.frequency.linearRampToValueAtTime(100, t + 0.2);
+                    gn.gain.setValueAtTime(0.1, t); gn.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    osc.start(t); osc.stop(t + 0.3);
+                } else if (type === 'click') {
+                    osc.frequency.setValueAtTime(600, t); gn.gain.setValueAtTime(0.05, t); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+                    osc.start(t); osc.stop(t + 0.05);
+                } else if (type === 'flip') {
+                    osc.frequency.setValueAtTime(300, t); osc.frequency.linearRampToValueAtTime(400, t + 0.05);
+                    gn.gain.setValueAtTime(0.05, t); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                    osc.start(t); osc.stop(t + 0.1);
+                } else if (type === 'win') {
+                    [523, 659, 783, 1046].forEach((f, i) => {
+                        const o = ctx.createOscillator(); const g = ctx.createGain();
+                        o.connect(g); g.connect(ctx.destination);
+                        o.frequency.value = f;
+                        g.gain.setValueAtTime(0.05, t + i*0.1); g.gain.exponentialRampToValueAtTime(0.001, t + i*0.1 + 0.3);
+                        o.start(t + i*0.1); o.stop(t + i*0.1 + 0.3);
+                    });
+                }
+            }
+        }
+
+        // Init App
+        window.app = new JapaneseApp();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
