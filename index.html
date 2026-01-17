@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap');
+        body { font-family: 'Nunito', sans-serif; }
+        .card-anim { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-anim:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="mb-10 text-center md:text-left border-b border-slate-200 pb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800">
+                Danh Sách <span class="text-indigo-600">Ứng Dụng</span>
+            </h1>
+            <p class="text-slate-500 mt-2">Chọn một mục bên dưới để truy cập.</p>
+        </header>
+
+        <!-- Grid Container -->
+        <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Nội dung sẽ được sinh ra tự động ở đây -->
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // KHU VỰC CẤU HÌNH (Chỉ cần sửa ở đây)
+        // ==========================================
+        const fileList = [
+            { title: "Rung chuông vàng", link: "rung_chuong_vang.html" },
+            { title: "Trắc nghiệm Tiếng Nhật IT", link: "trac_nghiem_jp_it.html" },
+            { title: "Trắc nghiệm Tiếng Nhật IT 2", link: "jp_it.html" },
+    { title: "Find me", link: "find_me.html" },
+    { title: "Tieng Viet", link: "TV_quizz.html" },
+            // Muốn thêm file mới? Chỉ cần copy dòng dưới và sửa tên:
+            // { title: "Tên bài mới", link: "bai_moi.html" },
+        ];
+        // ==========================================
+
+
+        // --- Dữ liệu Tài nguyên (Icon & Màu sắc) ---
+        const palettes = [
+            "bg-red-100 text-red-600 border-red-200 hover:border-red-400",
+            "bg-orange-100 text-orange-600 border-orange-200 hover:border-orange-400",
+            "bg-amber-100 text-amber-600 border-amber-200 hover:border-amber-400",
+            "bg-green-100 text-green-600 border-green-200 hover:border-green-400",
+            "bg-emerald-100 text-emerald-600 border-emerald-200 hover:border-emerald-400",
+            "bg-teal-100 text-teal-600 border-teal-200 hover:border-teal-400",
+            "bg-cyan-100 text-cyan-600 border-cyan-200 hover:border-cyan-400",
+            "bg-blue-100 text-blue-600 border-blue-200 hover:border-blue-400",
+            "bg-indigo-100 text-indigo-600 border-indigo-200 hover:border-indigo-400",
+            "bg-violet-100 text-violet-600 border-violet-200 hover:border-violet-400",
+            "bg-purple-100 text-purple-600 border-purple-200 hover:border-purple-400",
+            "bg-fuchsia-100 text-fuchsia-600 border-fuchsia-200 hover:border-fuchsia-400",
+            "bg-pink-100 text-pink-600 border-pink-200 hover:border-pink-400",
+            "bg-rose-100 text-rose-600 border-rose-200 hover:border-rose-400"
+        ];
+
+        const icons = [
+            "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253", // Book
+            "M13 10V3L4 14h7v7l9-11h-7z", // Lightning
+            "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z", // Lightbulb
+            "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z", // Flask
+            "M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z", // Puzzle
+            "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 3.214L13 21l-2.286-6.857L5 12l5.714-3.214L13 3z", // Star
+            "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" // Document
+        ];
+
+        // Hàm băm chuỗi thành số (để cùng 1 tên luôn ra cùng 1 màu/icon)
+        // Nếu bạn muốn ngẫu nhiên hoàn toàn mỗi lần F5, hãy thay bằng Math.random()
+        function getPseudoRandomIndex(str, max) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return Math.abs(hash) % max;
+        }
+
+        function render() {
+            const container = document.getElementById('grid-container');
+            let html = '';
+
+            // Fallback nếu danh sách trống
+            if(fileList.length === 0) {
+                fileList.push({ title: "Mẫu (Chưa có bài)", link: "#" });
+            }
+
+            fileList.forEach((item, index) => {
+                // Tạo tính ngẫu nhiên dựa trên tên bài (để cố định màu cho bài đó)
+                // Hoặc dùng index để ngẫu nhiên theo thứ tự
+                const seed = item.title;
+
+                const colorClass = palettes[getPseudoRandomIndex(seed, palettes.length)];
+                const iconPath = icons[getPseudoRandomIndex(seed + "icon", icons.length)];
+
+                html += `
+                <a href="${item.link}" class="card-anim group block bg-white rounded-2xl p-6 border-2 border-slate-100 ${colorClass.split(' ').pop()} hover:border-current transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm ${colorClass}">
+                            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}" />
+                            </svg>
+                        </div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
+                            <svg class="w-6 h-6 transform -rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">${item.title}</h3>
+                        <p class="text-xs font-mono text-slate-400 mt-1 truncate">${item.link}</p>
+                    </div>
+                </a>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        render();
+    </script>
+</body>
+</html>
+
+
