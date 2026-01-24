@@ -1,17 +1,35 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>AI App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap');
-        body { font-family: 'Nunito', sans-serif; }
-        .card-anim { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .card-anim:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1); }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card-anim {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-anim:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
+
 <body class="bg-slate-50 min-h-screen p-4 md:p-8">
 
     <div class="max-w-5xl mx-auto">
@@ -38,8 +56,9 @@
             { title: "Trainning Baby", link: "./baby/dist/index.html" },
             { title: "Trắc nghiệm Tiếng Nhật IT", link: "trac_nghiem_jp_it.html" },
             { title: "Trắc nghiệm Tiếng Nhật IT 2", link: "jp_it.html" },
-    { title: "Find me", link: "find_me.html" },
-    { title: "Tieng Viet", link: "TV_quizz.html" },
+            { title: "Find me", link: "find_me.html" },
+            { title: "Flashcard", link: "flashcard.html" },
+            { title: "Caro", link: "caro.html" },
             // Muốn thêm file mới? Chỉ cần copy dòng dưới và sửa tên:
             // { title: "Tên bài mới", link: "bai_moi.html" },
         ];
@@ -89,7 +108,7 @@
             let html = '';
 
             // Fallback nếu danh sách trống
-            if(fileList.length === 0) {
+            if (fileList.length === 0) {
                 fileList.push({ title: "Mẫu (Chưa có bài)", link: "#" });
             }
 
@@ -129,6 +148,5 @@
         render();
     </script>
 </body>
+
 </html>
-
-

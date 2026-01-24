@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cờ Caro (Gomoku) vs AI</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --accent-color: #2563eb;
+            --board-bg: #f8c291;
+            --line-color: #6b4c35;
+            --x-color: #ef4444;
+            --o-color: #2563eb;
+            --hover-bg: rgba(255, 255, 255, 0.4);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background-color: #6b7280;
+        }
+
+        button.secondary:hover {
+            background-color: #4b5563;
+        }
+
+        .status {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .board-container {
+            padding: 10px;
+            background: #eab676;
+            border-radius: 4px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            background-color: var(--board-bg);
+            border: 2px solid var(--line-color);
+            width: fit-content;
+        }
+
+        .cell {
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(107, 76, 53, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cell:hover::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+        }
+
+        .cell.x::before {
+            content: '×';
+            color: var(--x-color);
+            font-weight: 900;
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .cell.o::before {
+            content: '○';
+            color: var(--o-color);
+            font-weight: 900;
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .cell.win {
+            background-color: #fde047;
+        }
+
+        .cell.last-move {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Modal for game over */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 600px) {
+            .cell {
+                width: 20px;
+                height: 20px;
+                font-size: 14px;
+            }
+
+            .cell.x::before {
+                font-size: 18px;
+            }
+
+            .cell.o::before {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Cờ Caro vs AI</h1>
+
+    <div class="controls">
+        <button onclick="resetGame()">Ván mới</button>
+        <button class="secondary" onclick="toggleAI()">Đổi bên: <span id="ai-side">AI đi sau (O)</span></button>
+        <div class="status" id="status">Lượt của bạn (X)</div>
+    </div>
+
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h2 id="resultTitle">Winner!</h2>
+            <p id="resultMessage">Chúc mừng, bạn đã thắng!</p>
+            <button onclick="closeModal(); resetGame()">Chơi lại</button>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 15;
+        const CELL_SIZE = 32;
+        const HUMAN = 1; // Play as X
+        const AI = 2;    // Play as O
+        const EMPTY = 0;
+
+        let board = [];
+        let currentPlayer = HUMAN;
+        let gameActive = true;
+        let aiEnabled = true;
+        let humanSide = HUMAN;
+        let lastMove = null;
+
+        const boardEl = document.getElementById('board');
+        const statusEl = document.getElementById('status');
+        const aiSideEl = document.getElementById('ai-side');
+        const modal = document.getElementById('resultModal');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultMessage = document.getElementById('resultMessage');
+
+        // Initialize game
+        function initGame() {
+            boardEl.innerHTML = '';
+            board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
+            gameActive = true;
+            currentPlayer = HUMAN; // X always moves first
+            lastMove = null;
+            updateStatus();
+
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.onclick = () => handleCellClick(i, j);
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            // If AI is X (goes first)
+            if (humanSide === AI && aiEnabled) {
+                // First move center for AI if it goes first is standard
+                setTimeout(makeAiMove, 500);
+            }
+        }
+
+        function handleCellClick(row, col) {
+            if (!gameActive) return;
+            if (board[row][col] !== EMPTY) return;
+            if (currentPlayer !== humanSide && aiEnabled) return; // Wait for AI
+
+            placeMove(row, col, currentPlayer);
+
+            if (checkWin(row, col, currentPlayer)) {
+                endGame(currentPlayer);
+                return;
+            } else if (checkDraw()) {
+                endGame('draw');
+                return;
+            }
+
+            currentPlayer = currentPlayer === HUMAN ? AI : HUMAN;
+            updateStatus();
+
+            if (aiEnabled && currentPlayer !== humanSide) {
+                statusEl.textContent = 'AI đang nghĩ...';
+                setTimeout(() => {
+                    makeAiMove();
+                }, 100); // Small delay for UI update
+            }
+        }
+
+        function placeMove(row, col, player) {
+            board[row][col] = player;
+            const index = row * BOARD_SIZE + col;
+            const cell = boardEl.children[index];
+            cell.classList.add(player === HUMAN ? 'x' : 'o');
+
+            // Highlight last move
+            document.querySelectorAll('.last-move').forEach(el => el.classList.remove('last-move'));
+            cell.classList.add('last-move');
+            lastMove = { r: row, c: col };
+        }
+
+        function updateStatus() {
+            if (!gameActive) return;
+            const playerChar = currentPlayer === HUMAN ? 'X' : 'O';
+            const isHumanTurn = currentPlayer === humanSide;
+            statusEl.textContent = isHumanTurn ? `Lượt của bạn (${playerChar})` : `Lượt của AI (${playerChar})`;
+        }
+
+        function endGame(winner) {
+            gameActive = false;
+            let msg = '';
+            let title = '';
+            if (winner === 'draw') {
+                title = 'Hòa!';
+                msg = 'Bàn cờ đã đầy.';
+            } else if (winner === humanSide) {
+                title = 'Bạn thắng!';
+                msg = 'Chúc mừng, cao thủ!';
+            } else {
+                title = 'AI thắng!';
+                msg = 'Hãy thử lại nhé.';
+            }
+
+            resultTitle.textContent = title;
+            resultMessage.textContent = msg;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+        }
+
+        function resetGame() {
+            closeModal();
+            initGame();
+        }
+
+        function toggleAI() {
+            humanSide = humanSide === HUMAN ? AI : HUMAN;
+            aiSideEl.textContent = humanSide === HUMAN ? 'AI đi sau (O)' : 'AI đi trước (X)';
+            resetGame();
+        }
+
+        function checkDraw() {
+            return board.every(row => row.every(cell => cell !== EMPTY));
+        }
+
+        // --- Game Logic: Check Win --- //
+        function checkWin(r, c, player) {
+            const directions = [
+                [0, 1],  // Horizontal
+                [1, 0],  // Vertical
+                [1, 1],  // Diagonal \
+                [1, -1]  // Diagonal /
+            ];
+
+            for (let [dr, dc] of directions) {
+                let count = 1;
+                let winCells = [[r, c]];
+
+                // Check positive direction
+                for (let i = 1; i < 5; i++) {
+                    const nr = r + dr * i;
+                    const nc = c + dc * i;
+                    if (isValid(nr, nc) && board[nr][nc] === player) {
+                        count++;
+                        winCells.push([nr, nc]);
+                    } else break;
+                }
+
+                // Check negative direction
+                for (let i = 1; i < 5; i++) {
+                    const nr = r - dr * i;
+                    const nc = c - dc * i;
+                    if (isValid(nr, nc) && board[nr][nc] === player) {
+                        count++;
+                        winCells.push([nr, nc]);
+                    } else break;
+                }
+
+                if (count >= 5) {
+                    highlightWin(winCells);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function highlightWin(cells) {
+            cells.forEach(([r, c]) => {
+                const index = r * BOARD_SIZE + c;
+                boardEl.children[index].classList.add('win');
+            });
+        }
+
+        function isValid(r, c) {
+            return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+        }
+
+        // --- AI Logic --- //
+
+        function makeAiMove() {
+            // Simple heuristic based AI
+            const bestMove = getBestMove();
+            placeMove(bestMove.r, bestMove.c, currentPlayer);
+
+            if (checkWin(bestMove.r, bestMove.c, currentPlayer)) {
+                endGame(currentPlayer);
+            } else if (checkDraw()) {
+                endGame('draw');
+            } else {
+                currentPlayer = currentPlayer === HUMAN ? AI : HUMAN;
+                updateStatus();
+            }
+        }
+
+        function getBestMove() {
+            // First move: if center is open and play first, take it
+            if (board.flat().every(c => c === EMPTY)) {
+                return { r: 7, c: 7 };
+            }
+
+            let bestScore = -Infinity;
+            let moves = [];
+
+            // Only evaluate cells that are neighbors to existing stones (optimization)
+            const neighbors = getRelevantMoves();
+
+            // If no neighbors (shouldn't happen unless board empty handled above), random
+            if (neighbors.length === 0) return { r: 7, c: 7 };
+
+            for (let move of neighbors) {
+                const r = move.r;
+                const c = move.c;
+
+                // Evaluate move
+                board[r][c] = currentPlayer; // Try move
+                const score = evaluateBoard(r, c, currentPlayer);
+                board[r][c] = EMPTY; // Undo
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    moves = [move];
+                } else if (score === bestScore) {
+                    moves.push(move);
+                }
+            }
+
+            // Pick random best move to add variety
+            return moves[Math.floor(Math.random() * moves.length)];
+        }
+
+        function getRelevantMoves() {
+            const moves = [];
+            const visited = new Set();
+
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    if (board[i][j] !== EMPTY) {
+                        // Check neighbors
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                if (dx === 0 && dy === 0) continue;
+                                const ni = i + dx;
+                                const nj = j + dy;
+                                if (isValid(ni, nj) && board[ni][nj] === EMPTY) {
+                                    const key = `${ni},${nj}`;
+                                    if (!visited.has(key)) {
+                                        moves.push({ r: ni, c: nj });
+                                        visited.add(key);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function evaluateBoard(r, c, player) {
+            // Heuristic scoring:
+            // Check all 4 directions for this cell.
+            // Give high points for 5-in-a-row (Win)
+            // Points for 4-in-a-row open ends, etc.
+            // ALSO important: block opponent wins.
+
+            const opponent = player === HUMAN ? AI : HUMAN;
+
+            let attackScore = evaluatePosition(r, c, player);
+            let defendScore = evaluatePosition(r, c, opponent); // Pretend we are opponent playing here
+
+            // Attack vs Defend weights can be tuned. 
+            // Defending a forced loss is critical.
+
+            // If we have a win, take it immediately
+            if (attackScore >= 100000) return 200000;
+
+            // If opponent has a win, block it immediately
+            if (defendScore >= 100000) return 100000;
+
+            return attackScore + defendScore * 1.2; // Slightly prefer defense to be safe? Or attack? 
+            // In Gomoku, blocking 3s and 4s is huge.
+        }
+
+        function evaluatePosition(r, c, player) {
+            let totalScore = 0;
+            const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+            for (let [dr, dc] of directions) {
+                totalScore += getLineScore(r, c, dr, dc, player);
+            }
+            return totalScore;
+        }
+
+        function getLineScore(r, c, dr, dc, player) {
+            // Temporarily assume board[r][c] is player (it is set in the outer loop)
+            // But for defense calc, the board[r][c] is actually our stone, but we want to see if it fills an opponent line.
+            // The outer loop sets board[r][c] = currentPlayer. 
+            // If we are evaluating defense, we are asking "If opponent played here, how good is it for them?"
+            // So we need to treat board[r][c] as 'player' for the logic check.
+
+            // We need to check the continuous line of 'player' stones passing through r, c
+
+            let count = 1;
+            let blockedEnds = 0;
+
+            // Scan positive
+            let i = 1;
+            while (true) {
+                const nr = r + dr * i;
+                const nc = c + dc * i;
+                if (!isValid(nr, nc)) {
+                    blockedEnds++;
+                    break;
+                }
+                const cell = board[nr][nc];
+                if (cell === player) {
+                    count++;
+                } else if (cell === EMPTY) {
+                    break;
+                } else {
+                    blockedEnds++;
+                    break;
+                }
+                i++;
+            }
+
+            // Scan negative
+            i = 1;
+            while (true) {
+                const nr = r - dr * i;
+                const nc = c - dc * i;
+                if (!isValid(nr, nc)) {
+                    blockedEnds++;
+                    break;
+                }
+                const cell = board[nr][nc];
+                if (cell === player) {
+                    count++;
+                } else if (cell === EMPTY) {
+                    break;
+                } else {
+                    blockedEnds++;
+                    break;
+                }
+                i++;
+            }
+
+            if (blockedEnds >= 2 && count < 5) return 0; // Completely blocked, useless unless 5
+
+            // Scoring
+            if (count >= 5) return 100000;
+            if (count === 4) return 10000; // Live 4 or Dead 4 (1 blocked) - heavily prioritized
+            if (count === 3) return blockedEnds === 0 ? 1000 : 100; // Live 3 vs Dead 3
+            if (count === 2) return blockedEnds === 0 ? 100 : 10;
+
+            return 1;
+        }
+
+        initGame();
+    </script>
+</body>
+
+</html>
