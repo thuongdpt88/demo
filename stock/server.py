@@ -1,3 +1,4 @@
+
 import http.server
 import socketserver
 import urllib.parse
@@ -21,20 +22,18 @@ except ImportError as e:
     VNSTOCK_AVAILABLE = False
     print(f"Vnstock chưa được cài đặt hoặc lỗi import: {e}, sử dụng giả lập.")
 
-PORT = 8000
-HOST = "0.0.0.0"
+PORT = 8086
 
 BASE_PRICES = {
     'VIC': 43.5, 'VHM': 41.2, 'FPT': 96.8, 'VNM': 67.5,
     'TCB': 34.2, 'VCB': 91.0, 'HPG': 28.5, 'MWG': 45.3
 }
 
-class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
+class StockHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/"):
             self.handle_api()
         else:
-            # Serve static files
             super().do_GET()
 
     def handle_api(self):
@@ -67,8 +66,9 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
             results = []
             for t in tickers.split(','):
                 try:
+                    # Sử dụng VCI làm provider thay cho TCBS bị deprecated
                     q = Quote(symbol=t, source='VCI')
-                    df = q.history(count_back=2)
+                    df = q.history(count_back=2) # Lấy 2 phiên để có giá đóng cửa cũ tính % thay đổi
                     if not df.empty:
                         last = df.iloc[-1]
                         prev = df.iloc[-2] if len(df) > 1 else last
@@ -89,7 +89,7 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
             if results:
                 return {"data": results, "source": "vnstock (VCI)"}
 
-        # Fallback
+        # Fallback (Giả lập)
         results = []
         for t in tickers.split(','):
             base = BASE_PRICES.get(t, 50.0)
@@ -110,9 +110,11 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
                 df = q.history(count_back=100)
                 
                 data = []
+                # Vnstock v3 thường dùng cột 'time' hoặc 'TradingDate'
                 time_col = 'time' if 'time' in df.columns else (df.index.name if df.index.name else 'time')
                 
                 if time_col not in df.columns and time_col != df.index.name:
+                    # Nếu là index
                     df = df.reset_index()
                     time_col = 'time' if 'time' in df.columns else df.columns[0]
 
@@ -125,7 +127,7 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 print(f"Lỗi lịch sử cho {ticker}: {e}")
 
-        # Fallback
+        # Fallback (Giả lập)
         data = []
         base = BASE_PRICES.get(ticker, 50.0)
         curr = base
@@ -145,11 +147,17 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
         if VNSTOCK_AVAILABLE:
             try:
                 f = Finance(symbol=ticker, source='VCI')
-                df = f.ratio(period='year')
+                df = f.ratio(period='year') # Thường lấy theo năm
                 if not df.empty:
+                    # Lấy dòng mới nhất
                     latest = df.iloc[-1]
+                    
+                    # Columns are MultiIndex in vnstock v3 ratio()
+                    # We'll flatten or access carefully
+                    # Try to find PE, PB, ROE
                     stats = {}
                     
+                    # Flatten logic for helper
                     def get_val(lvl1, lvl2):
                         try:
                             return float(latest[(lvl1, lvl2)])
@@ -185,11 +193,8 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
-print(f"Server tích hợp (Web + Stock API) đang chạy tại: http://{HOST}:{PORT}")
-print(f"- Trang chính: http://localhost:{PORT}")
-print(f"- Stock App: http://localhost:{PORT}/stock/")
-print(f"- API: http://localhost:{PORT}/api/quote?tickers=VIC")
-
+print(f"Server chứng khoán (vnstock v3) đang chạy tại: http://localhost:{PORT}")
+# Đảm bảo bind lặp lại nếu port chưa giải phóng
 socketserver.TCPServer.allow_reuse_address = True
-with socketserver.TCPServer((HOST, PORT), UnifiedHandler) as httpd:
+with socketserver.TCPServer(("", PORT), StockHandler) as httpd:
     httpd.serve_forever()

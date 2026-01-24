@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceFlow - Premium Speech to Text</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--primary-bg);
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ambient Glow */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-weight: 600;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        /* Text Area */
+        .result-container {
+            position: relative;
+            z-index: 1;
+            min-height: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .result-container:focus-within {
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #final-transcript {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            font-family: 'Outfit', sans-serif;
+            min-height: 180px;
+        }
+
+        #interim-transcript {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            z-index: 1;
+        }
+
+        .btn-mic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-mic svg {
+            width: 32px;
+            height: 32px;
+            fill: currentColor;
+            transition: all 0.3s ease;
+        }
+
+        .btn-mic:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-mic.recording {
+            background: var(--danger-color);
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-red 2s infinite;
+            border-color: transparent;
+        }
+
+        .btn-mic.recording svg {
+            transform: scale(1.1);
+        }
+
+        /* Ripple Effect Animation */
+        @keyframes pulse-red {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        .btn-action {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-action:active {
+            transform: translateY(0);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .listening .status-dot {
+            background-color: var(--danger-color);
+            box-shadow: 0 0 8px var(--danger-color);
+        }
+
+        .listening .status-text {
+            color: var(--text-primary);
+        }
+
+        /* Language Selector (Simple Custom Dropdown Style) */
+        .lang-select-wrapper {
+            position: relative;
+        }
+
+        select {
+            appearance: none;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 2rem 0.5rem 1rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        .lang-select-wrapper::after {
+            content: '▼';
+            font-size: 0.6rem;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 500;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 640px) {
+            .glass-card {
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="glass-card">
+            <div class="status-badge" id="status-badge">
+                <div class="status-dot"></div>
+                <span class="status-text">Ready</span>
+            </div>
+
+            <div class="header">
+                <h1>VoiceFlow</h1>
+                <p>Convert your speech into text instantly.</p>
+            </div>
+
+            <div class="result-container">
+                <textarea id="final-transcript" placeholder="Tap the microphone and start speaking..."
+                    spellcheck="false"></textarea>
+                <div id="interim-transcript"></div>
+            </div>
+
+            <div class="controls">
+                <div class="lang-select-wrapper">
+                    <select id="lang-select">
+                        <option value="vi-VN" selected>Vietnamese</option>
+                        <option value="en-US">English (US)</option>
+                        <option value="ja-JP">Japanese</option>
+                        <option value="ko-KR">Korean</option>
+                        <option value="zh-CN">Chinese</option>
+                    </select>
+                </div>
+
+                <button class="btn-mic" id="mic-btn" title="Start Recording">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                        <path
+                            d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                    </svg>
+                </button>
+
+                <button class="btn-action" id="copy-btn" title="Copy to Clipboard">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Copied to clipboard!
+    </div>
+
+    <script>
+        const micBtn = document.getElementById('mic-btn');
+        const finalTranscriptArea = document.getElementById('final-transcript');
+        const statusBadge = document.getElementById('status-badge');
+        const statusText = statusBadge.querySelector('.status-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const toast = document.getElementById('toast');
+        const langSelect = document.getElementById('lang-select');
+
+        let recognition;
+        let isRecording = false;
+
+        // Check for browser support
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = langSelect.value;
+        } else {
+            alert('Your browser does not support the Web Speech API. Please try Chrome or Edge.');
+            micBtn.disabled = true;
+        }
+
+        langSelect.addEventListener('change', () => {
+            if (recognition) {
+                recognition.lang = langSelect.value;
+                if (isRecording) {
+                    recognition.stop();
+                    // Will restart automatically in 'end' event if we flag it, 
+                    // but for simplicity, let's just stop and let user restart, 
+                    // or better yet, restart immediately if it was running.
+                    // However, changing lang usually requires a fresh session.
+                    // Let's just stop it to apply changes cleanly.
+                    toggleRecording(); // Stop it
+                    setTimeout(() => toggleRecording(), 500); // Start again
+                }
+            }
+        });
+
+        micBtn.addEventListener('click', toggleRecording);
+
+        function toggleRecording() {
+            if (!recognition) return;
+
+            if (isRecording) {
+                recognition.stop();
+                isRecording = false;
+                updateUI(false);
+            } else {
+                recognition.start();
+                isRecording = true;
+                updateUI(true);
+            }
+        }
+
+        function updateUI(recording) {
+            if (recording) {
+                micBtn.classList.add('recording');
+                statusBadge.classList.add('listening');
+                statusText.textContent = 'Listening...';
+            } else {
+                micBtn.classList.remove('recording');
+                statusBadge.classList.remove('listening');
+                statusText.textContent = 'Ready';
+            }
+        }
+
+        if (recognition) {
+            recognition.onstart = () => {
+                isRecording = true;
+                updateUI(true);
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                updateUI(false);
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                // Append final transcript to textarea (avoiding overwriting previous text if manual edits happened)
+                // Actually, for continuous, we usually append. But here, let's just create a better UX:
+                // We'll append only new finalized parts.
+
+                // Simplified approach: standard append for demo
+                if (finalTranscript) {
+                    // Check if previous char is space, if not add one
+                    const currentText = finalTranscriptArea.value;
+                    const needsSpace = currentText.length > 0 && !currentText.endsWith(' ') && !currentText.endsWith('\n');
+                    finalTranscriptArea.value += (needsSpace ? ' ' : '') + finalTranscript;
+                    finalTranscriptArea.scrollTop = finalTranscriptArea.scrollHeight; // Auto scroll
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                if (event.error === 'not-allowed') {
+                    alert('Microphone access denied. Please allow microphone access to use this feature.');
+                }
+                isRecording = false;
+                updateUI(false);
+            };
+        }
+
+        // Copy functionality
+        copyBtn.addEventListener('click', () => {
+            const text = finalTranscriptArea.value;
+            if (!text) return;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        });
+
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

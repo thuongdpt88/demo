@@ -1,0 +1,83 @@
+nohup: ignoring input
+127.0.0.1 - - [25/Jan/2026 00:30:26] "GET /api/quote?tickers=VIC HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:30:58] "GET /stock/ HTTP/1.1" 304 -
+127.0.0.1 - - [25/Jan/2026 00:30:59] "GET /api/quote?tickers=VIC,VHM,FPT HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:00] "GET /api/quote?tickers=VIC,VHM,FPT HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:00] "GET /api/stats?ticker=VIC HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:01] "GET /api/history?ticker=VIC HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:01] "GET /api/stats?ticker=VIC HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:02] "GET /api/history?ticker=VIC HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:02] code 404, message File not found
+127.0.0.1 - - [25/Jan/2026 00:31:02] "GET /firebase-messaging-sw.js HTTP/1.1" 404 -
+127.0.0.1 - - [25/Jan/2026 00:31:07] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:09] code 404, message File not found
+127.0.0.1 - - [25/Jan/2026 00:31:09] "GET /firebase-messaging-sw.js HTTP/1.1" 404 -
+127.0.0.1 - - [25/Jan/2026 00:31:10] "GET /stock/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:11] "GET /api/quote?tickers=VIC,VHM,FPT HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:12] "GET /api/stats?ticker=VIC HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:12] "GET /api/history?ticker=VIC HTTP/1.1" 200 -
+127.0.0.1 - - [25/Jan/2026 00:31:12] code 404, message File not found
+127.0.0.1 - - [25/Jan/2026 00:31:12] "GET /firebase-messaging-sw.js HTTP/1.1" 404 -
+Vnstock v3 đã sẵn sàng.
+Server tích hợp (Web + Stock API) đang chạy tại: http://0.0.0.0:8000
+- Trang chính: http://localhost:8000
+- Stock App: http://localhost:8000/stock/
+- API: http://localhost:8000/api/quote?tickers=VIC
+
+⚠️ 
+============================================================
+⚠️  GIỚI HẠN API ĐÃ ĐẠT TỐI ĐA (Rate Limit Exceeded)
+============================================================
+
+📌 Bạn đã đạt giới hạn tối đa số lượt yêu cầu API trong 1 phút (minute).
+   (You have reached the maximum API request limit for this period)
+
+📊 Chi tiết (Details):
+   • Gói hiện tại: Khách (Guest)
+   • Giới hạn: 20 requests/phút
+   • Đã sử dụng: 20/20
+   • Chờ 30 giây để tiếp tục (Wait to retry)
+
+💡 Giải pháp (Solutions):
+   1️⃣ Chờ 30 giây rồi thử lại
+      (Wait and retry)
+   2️⃣ Tham gia gói thành viên tài trợ để sử dụng không bị gián đoạn
+      (Join sponsor membership for uninterrupted access)
+
+🚀 Nâng cấp (Upgrade):
+   • Phiên bản cộng đồng (60 request/phút - Community):
+     Đăng ký API key miễn phí: https://vnstocks.com/login
+   • Gói thành viên tài trợ (180-600 request/phút - Sponsor):
+     Tham gia: https://vnstocks.com/insiders-program
+
+============================================================
+
+
+Rate limit exceeded. 
+============================================================
+⚠️  GIỚI HẠN API ĐÃ ĐẠT TỐI ĐA (Rate Limit Exceeded)
+============================================================
+
+📌 Bạn đã đạt giới hạn tối đa số lượt yêu cầu API trong 1 phút (minute).
+   (You have reached the maximum API request limit for this period)
+
+📊 Chi tiết (Details):
+   • Gói hiện tại: Khách (Guest)
+   • Giới hạn: 20 requests/phút
+   • Đã sử dụng: 20/20
+   • Chờ 30 giây để tiếp tục (Wait to retry)
+
+💡 Giải pháp (Solutions):
+   1️⃣ Chờ 30 giây rồi thử lại
+      (Wait and retry)
+   2️⃣ Tham gia gói thành viên tài trợ để sử dụng không bị gián đoạn
+      (Join sponsor membership for uninterrupted access)
+
+🚀 Nâng cấp (Upgrade):
+   • Phiên bản cộng đồng (60 request/phút - Community):
+     Đăng ký API key miễn phí: https://vnstocks.com/login
+   • Gói thành viên tài trợ (180-600 request/phút - Sponsor):
+     Tham gia: https://vnstocks.com/insiders-program
+
+============================================================
+ Process terminated.
