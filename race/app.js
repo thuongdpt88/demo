@@ -7,9 +7,11 @@ let isRacing = false;
 let history = [];
 
 // Enhanced Audio Manager with more contextual sounds
+// Enhanced Audio Manager with more contextual sounds
 const sounds = {
     start: new Audio('https://www.soundjay.com/buttons/beep-07a.mp3'),
-    race: new Audio('https://actions.google.com/sounds/v1/crowds/battle_crowd_celebration.ogg'),
+    theme: new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/paza-moduless.mp3'), // Upbeat BGM
+    engine: new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'), // Continuous Kart Engine
     cheer: new Audio('https://actions.google.com/sounds/v1/crowds/crowd_celebration.ogg'),
     bomb: new Audio('https://actions.google.com/sounds/v1/impacts/crash.ogg'),
     boost: new Audio('https://actions.google.com/sounds/v1/science_fiction/alien_beam.ogg'),
@@ -18,15 +20,22 @@ const sounds = {
     countdown: new Audio('https://www.soundjay.com/buttons/beep-02.mp3')
 };
 
-// Adjust volumes
-sounds.race.volume = 0.4;
-sounds.cheer.volume = 0.5;
+// Configure Loops and Volume
+sounds.theme.loop = true;
+sounds.engine.loop = true;
+
+sounds.theme.volume = 0.25;  // Main BGM
+sounds.engine.volume = 0.15; // Background hum
+sounds.cheer.volume = 0.5;   // Events
 
 const playSound = (key) => {
     if (!soundEnabled || !sounds[key]) return;
     try {
-        sounds[key].currentTime = 0;
-        sounds[key].play().catch(e => console.warn("Audio play failed:", e));
+        if (!sounds[key].loop) {
+            sounds[key].currentTime = 0;
+        }
+        const promise = sounds[key].play();
+        if (promise) promise.catch(e => console.warn(`Audio ${key} failed:`, e));
     } catch (e) {
         console.warn("Audio error:", e);
     }
@@ -39,14 +48,14 @@ const stopSound = (key) => {
     }
 };
 
-// Racer Data - Updated with Emoji Avatars
+// Racer Data - Updated with Emoji Avatars & Kart Colors
 const racers = [
-    { id: 1, name: "Thỏ Siêu Tốc", avatar: "🐰", speed: 8.5, stamina: 4, luck: 7, desc: "Siêu nhanh nhưng mau mệt", form: 0 },
-    { id: 2, name: "Cáo Mưu Mẹo", avatar: "🦊", speed: 6.5, stamina: 7, luck: 6, desc: "Chạy khéo léo, né bẫy giỏi", form: 0 },
-    { id: 3, name: "Gấu Trúc", avatar: "🐼", speed: 5.5, stamina: 9, luck: 5, desc: "Cực kỳ bền bỉ, chạy đường dài", form: 0 },
-    { id: 4, name: "Mèo Mun", avatar: "🐱", speed: 7.2, stamina: 5, luck: 8, desc: "Nhiều may mắn bất ngờ", form: 0 },
-    { id: 5, name: "Cánh Cụt", avatar: "🐧", speed: 6.8, stamina: 6, luck: 6, desc: "Cân bằng, trượt băng nhanh", form: 0 },
-    { id: 6, name: "Khủng Long", avatar: "🦖", speed: 9.0, stamina: 3, luck: 4, desc: "Vua tốc độ, tính nóng nảy", form: 0 }
+    { id: 1, name: "Thỏ Siêu Tốc", avatar: "🐰", color: "#ff4757", speed: 8.5, stamina: 4, luck: 7, desc: "Siêu nhanh nhưng mau mệt", form: 0 },
+    { id: 2, name: "Cáo Mưu Mẹo", avatar: "🦊", color: "#ffa502", speed: 6.5, stamina: 7, luck: 6, desc: "Chạy khéo léo, né bẫy giỏi", form: 0 },
+    { id: 3, name: "Gấu Trúc", avatar: "🐼", color: "#2ed573", speed: 5.5, stamina: 9, luck: 5, desc: "Cực kỳ bền bỉ, chạy đường dài", form: 0 },
+    { id: 4, name: "Mèo Mun", avatar: "🐱", color: "#1e90ff", speed: 7.2, stamina: 5, luck: 8, desc: "Nhiều may mắn bất ngờ", form: 0 },
+    { id: 5, name: "Cánh Cụt", avatar: "🐧", color: "#3742fa", speed: 6.8, stamina: 6, luck: 6, desc: "Cân bằng, trượt băng nhanh", form: 0 },
+    { id: 6, name: "Khủng Long", avatar: "🦖", color: "#747d8c", speed: 9.0, stamina: 3, luck: 4, desc: "Vua tốc độ, tính nóng nảy", form: 0 }
 ];
 
 // Randomize form before each race
@@ -134,19 +143,17 @@ async function startRace() {
 
     playSound('start');
 
-    const musicInterval = setInterval(() => {
-        if (finishOrder.length < 3) {
-            playSound('race');
-        }
-    }, 5000);
+    // Start continuous BGM and Engine
+    playSound('theme');
+    playSound('engine');
 
+    // Random cheering (occasional)
     const cheerInterval = setInterval(() => {
-        if (finishOrder.length < 3 && Math.random() > 0.4) {
+        if (finishOrder.length < 3 && Math.random() > 0.7) {
             playSound('cheer');
         }
-    }, 1800);
+    }, 3500);
 
-    window.raceMusicInterval = musicInterval;
     window.raceCheerInterval = cheerInterval;
 
     await new Promise(resolve => {
@@ -244,8 +251,10 @@ async function startRace() {
         }, 50);
     });
 
-    if (window.raceMusicInterval) clearInterval(window.raceMusicInterval);
     if (window.raceCheerInterval) clearInterval(window.raceCheerInterval);
+
+    stopSound('engine');
+    stopSound('theme');
 
     const winner = racers.find(r => r.id === winnerId);
     const win = winnerId === selectedRacerId;
@@ -407,7 +416,14 @@ function initTrack() {
         return `
     <div class="track-line">
       <div id="token-${r.id}" class="racer-token ${isSelected}">
-        ${r.avatar}
+        <div class="kart-wrap">
+            <div class="kart-body" style="--kart-color: ${r.color};">
+                <div class="kart-wheel wheel-front"></div>
+                <div class="kart-wheel wheel-back"></div>
+                <div class="kart-spoiler"></div>
+            </div>
+            <div class="driver-avatar">${r.avatar}</div>
+        </div>
       </div>
     </div>
   `;

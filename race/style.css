@@ -483,31 +483,102 @@ header {
     color: #cd7f32;
 }
 
-/* Racer Token Updates */
+/* Racer Token & Kart Styling */
 .racer-token {
-    width: 60px;
+    width: 80px;
     height: 60px;
     position: absolute;
     left: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 45px;
-    filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.5));
     z-index: 10;
     transition: left 0.1s linear, transform 0.1s ease-out;
 }
 
-.racer-token.user-pick {
-    z-index: 100;
-    filter: drop-shadow(0 0 10px #ffd700) drop-shadow(0 0 5px #ff4757);
+.kart-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.4));
+    animation: kartBounce 0.2s infinite alternate;
 }
 
-.racer-token.user-pick::before {
-    content: "▼";
+@keyframes kartBounce {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-1px);
+    }
+}
+
+.kart-body {
+    width: 60px;
+    height: 25px;
+    background-color: var(--kart-color);
+    border-radius: 8px 12px 6px 6px;
+    position: absolute;
+    bottom: 5px;
+    left: 10px;
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.2);
+}
+
+.kart-wheel {
+    width: 16px;
+    height: 16px;
+    background: #222;
+    border-radius: 50%;
+    position: absolute;
+    bottom: -6px;
+    border: 3px solid #444;
+    animation: spinWheel 0.2s linear infinite;
+}
+
+@keyframes spinWheel {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.wheel-front {
+    right: 2px;
+}
+
+.wheel-back {
+    left: 4px;
+}
+
+.kart-spoiler {
+    position: absolute;
+    top: -8px;
+    right: -2px;
+    width: 8px;
+    height: 20px;
+    background: inherit;
+    transform: skew(-25deg);
+    border-radius: 2px;
+}
+
+.driver-avatar {
     position: absolute;
     top: -20px;
-    font-size: 16px;
+    left: 15px;
+    font-size: 38px;
+    z-index: 5;
+    transform: rotate(5deg);
+}
+
+.racer-token.user-pick {
+    z-index: 100;
+    filter: drop-shadow(0 0 8px gold);
+}
+
+.racer-token.user-pick .driver-avatar::before {
+    content: "▼";
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
     color: #ffd700;
     animation: arrowBounce 0.6s infinite alternate;
 }
@@ -642,6 +713,51 @@ header {
     100% {
         transform: translateY(-30px) scale(1.5);
         opacity: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .race-modal-content {
+        padding: 5px;
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .race-scene-wrapper {
+        flex: 1;
+        overflow-x: auto;
+    }
+
+    .race-track-container {
+        height: 100%;
+        min-height: 400px;
+    }
+
+    .track-line {
+        height: 16.66%;
+    }
+
+    .scenery-top,
+    .scenery-bottom {
+        height: 30px;
+    }
+
+    .audience-row,
+    .tree-row {
+        font-size: 16px;
+        letter-spacing: 5px;
+    }
+
+    .racer-token {
+        transform: scale(0.7);
+        transform-origin: left bottom;
+    }
+
+    .mini-ranking {
+        display: none;
     }
 }
 
