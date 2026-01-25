@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Voice → Text - Demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Voice → Text (Realtime)</h1>
+    <div class="row">
+      <label for="lang">Language:</label>
+      <select id="lang">
+        <option value="vi-VN" selected>Tiếng Việt (vi-VN)</option>
+        <option value="en-US">English (en-US)</option>
+        <option value="auto">Auto-detect (browser default)</option>
+      </select>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
+    </div>
+
+    <div id="status">Status: Idle</div>
+
+    <div class="box">
+      <h3>Interim</h3>
+      <div id="interim" class="interim"></div>
+    </div>
+
+    <div class="box">
+      <h3>Final</h3>
+      <div id="final" class="final"></div>
+    </div>
+
+    <div class="note">
+      <p>Notes: This demo uses the Web Speech API in the browser. Chrome/Edge have the best support. If your browser does not support it, see the README for alternatives.</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
