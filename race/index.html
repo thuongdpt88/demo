@@ -75,20 +75,46 @@
 
     <!-- Race Popup -->
     <div id="raceModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header" style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <div class="modal-content race-modal-content">
+            <div class="modal-header"
+                style="display: flex; justify-content: space-between; margin-bottom: 10px; z-index: 10; position: relative;">
                 <h2>Trường Đua Sôi Động</h2>
-                <div id="raceRound" style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color);">Vòng 1 /
-                    1</div>
+                <div id="raceRound"
+                    style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color); background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px;">
+                    Vòng 1 / 1</div>
             </div>
 
-            <div class="race-track-container" id="trackContainer">
-                <!-- Track lines and racers injected by JS -->
-                <div class="finish-line"></div>
+            <!-- Scenery & Decorations -->
+            <div class="scenery-top">
+                <div class="audience-row">
+                    🎈 🏃 🏃‍♀️ 🏃 🎈 🏃‍♀️ 🏃 🎈
+                </div>
+                <div class="tree-row">
+                    🌳 🌲 🌳 🌲 🌳
+                </div>
+            </div>
+
+            <div class="race-scene-wrapper">
+                <div class="race-track-container" id="trackContainer">
+                    <!-- Track lines and racers injected by JS -->
+                    <div class="finish-line"></div>
+                </div>
+
+                <!-- Real-time Ranking -->
+                <div id="miniRanking" class="mini-ranking">
+                    <h4>Xếp hạng</h4>
+                    <ul id="miniRankingList"></ul>
+                </div>
+            </div>
+
+            <div class="scenery-bottom">
+                <div class="tree-row">
+                    🌲 🌳 🌲 🌳 🌲
+                </div>
             </div>
 
             <div id="raceEvents"
-                style="height: 60px; margin-top: 15px; text-align: center; color: var(--accent-yellow); font-style: italic;">
+                style="height: 40px; margin-top: 10px; text-align: center; color: var(--accent-yellow); font-style: italic; font-weight: bold; text-shadow: 1px 1px 2px black;">
                 Chuẩn bị...
             </div>
         </div>

@@ -151,6 +151,35 @@ async function startRace() {
 
     await new Promise(resolve => {
         const interval = setInterval(() => {
+            // --- Update Real-time Ranking ---
+            const currentStandings = racers.map((r, i) => {
+                const finishedIdx = finishOrder.indexOf(r.id);
+                // Score: 
+                // - Finished: High score based on finish order (1st = highest)
+                // - Racing: Score based on laps + position
+                let score = 0;
+                if (finishedIdx !== -1) {
+                    score = 1000000 - finishedIdx * 10000;
+                } else {
+                    score = racerLaps[i] * 1000 + racerPositions[i];
+                }
+                return { ...r, score };
+            }).sort((a, b) => b.score - a.score);
+
+            const rankingList = document.getElementById('miniRankingList');
+            if (rankingList) {
+                rankingList.innerHTML = currentStandings.slice(0, 3).map((r, idx) => `
+                    <li class="rank-${idx + 1}" style="animation: slideIn 0.3s ease-out">
+                        <span style="display:flex; align-items:center; gap:5px;">
+                            ${idx === 0 ? '👑' : `#${idx + 1}`} 
+                            <span style="font-size:18px;">${r.avatar}</span>
+                        </span>
+                        <span style="max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.name}</span>
+                    </li>
+                `).join('');
+            }
+            // --------------------------------
+
             racers.forEach((racer, i) => {
                 if (finishOrder.includes(racer.id)) return;
                 if (racerLaps[i] >= totalRounds) return;
