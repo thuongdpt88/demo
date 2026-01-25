@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siêu Đua Thú - Cartoon Race</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <h1 style="display: flex; align-items: center; gap: 10px;">
+                    <i data-lucide="trophy" style="color: var(--accent-yellow)"></i>
+                    Animal<span>Racing</span>
+                </h1>
+            </div>
+            <div class="user-stats">
+                <div class="stat-item">
+                    <i data-lucide="wallet" size="18"></i>
+                    <span>Points: <span id="userPoints" class="point-val">10,000,000</span></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <section class="racer-selection">
+                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Chọn Tay Đua Ưng Ý</h2>
+                    <button id="btnConfig" class="btn btn-config" style="width: auto; display: flex; gap: 8px;">
+                        <i data-lucide="settings" size="18"></i> Cài đặt
+                    </button>
+                </div>
+                <div class="racer-list" id="racerList">
+                    <!-- Racers injected by JS -->
+                </div>
+            </section>
+
+            <aside class="sidebar">
+                <div class="betting-panel">
+                    <h3>Cá Cược</h3>
+                    <p id="selectedRacerName" style="margin-top: 10px; color: var(--accent-yellow); font-weight: bold;">
+                        Chưa chọn tay đua</p>
+                    <div class="input-group">
+                        <label>Mức cược:</label>
+                        <input type="number" id="betAmount" class="input-bet" value="100000" min="1000">
+                    </div>
+                    <button id="btnStartRace" class="btn btn-race" disabled>BẮT ĐẦU ĐUA!</button>
+
+                    <div class="mode-toggle"
+                        style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 600;">🚀 Chế độ Turbo (Win dễ)</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="easyMode">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="history-panel">
+                    <h3>Lịch Sử Thành Tích</h3>
+                    <div id="historyList">
+                        <p style="opacity: 0.5; padding: 10px;">Chưa có dữ liệu...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Race Popup -->
+    <div id="raceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <h2>Trường Đua Sôi Động</h2>
+                <div id="raceRound" style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color);">Vòng 1 /
+                    1</div>
+            </div>
+
+            <div class="race-track-container" id="trackContainer">
+                <!-- Track lines and racers injected by JS -->
+                <div class="finish-line"></div>
+            </div>
+
+            <div id="raceEvents"
+                style="height: 60px; margin-top: 15px; text-align: center; color: var(--accent-yellow); font-style: italic;">
+                Chuẩn bị...
+            </div>
+        </div>
+    </div>
+
+    <!-- Config Popup -->
+    <div id="configModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Thiết lập giải đấu</h3>
+            <div class="form-group" style="margin: 20px 0;">
+                <label>Số vòng đua:</label>
+                <input type="number" id="roundsInput" class="input-bet" value="3" min="1" max="10">
+            </div>
+            <div class="form-group" style="margin: 20px 0; display: flex; justify-content: space-between;">
+                <label>Âm thanh:</label>
+                <input type="checkbox" id="soundToggle" checked>
+            </div>
+            <button id="saveConfig" class="btn btn-primary" style="background: var(--secondary-color)">Lưu thay
+                đổi</button>
+        </div>
+    </div>
+
+    <!-- Result Popup -->
+    <div id="resultModal" class="modal">
+        <div class="result-modal-content">
+            <div id="fireworksContainer"></div>
+            <div class="result-icon" id="resultIcon">🏆</div>
+            <h2 id="resultTitle" class="result-title">CHIẾN THẮNG!</h2>
+            <p id="resultMessage" class="result-message"></p>
+            <button id="btnCloseResult" class="btn btn-primary" style="margin-top: 20px;">Đóng</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>

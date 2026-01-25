@@ -1,45 +1,101 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Voice → Text - Demo</title>
+  <title>Voice → Text - Professional Realtime Transcriber</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap"
+    rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <div class="container">
-    <h1>Voice → Text (Realtime)</h1>
-    <div class="row">
-      <label for="lang">Language:</label>
-      <select id="lang">
-        <option value="vi-VN" selected>Tiếng Việt (vi-VN)</option>
-        <option value="en-US">English (en-US)</option>
-        <option value="auto">Auto-detect (browser default)</option>
-      </select>
-    </div>
+  <div class="background-glow"></div>
 
-    <div class="controls">
-      <button id="startBtn">Start</button>
-      <button id="stopBtn" disabled>Stop</button>
-    </div>
+  <div class="app-container">
+    <header>
+      <div class="logo-area">
+        <div class="icon-circle">
+          <i data-lucide="mic"></i>
+        </div>
+        <h1>Voice<span>Transcribe</span></h1>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <span class="dot"></span>
+        <span id="statusText">Ready</span>
+      </div>
+    </header>
 
-    <div id="status">Status: Idle</div>
+    <main>
+      <section class="config-panel">
+        <div class="input-group">
+          <label for="lang">
+            <i data-lucide="languages" size="18"></i>
+            Language
+          </label>
+          <div class="select-wrapper">
+            <select id="lang">
+              <option value="vi-VN" selected>Tiếng Việt (vi-VN)</option>
+              <option value="en-US">English (en-US)</option>
+              <option value="auto">Auto-detect</option>
+            </select>
+          </div>
+        </div>
+      </section>
 
-    <div class="box">
-      <h3>Interim</h3>
-      <div id="interim" class="interim"></div>
-    </div>
+      <section class="transcription-area">
+        <div class="output-card interim-card">
+          <div class="card-header">
+            <h3>Live Preview</h3>
+            <div class="pulse-indicator"></div>
+          </div>
+          <div id="interim" class="text-display interim-text">Listening for voice...</div>
+        </div>
 
-    <div class="box">
-      <h3>Final</h3>
-      <div id="final" class="final"></div>
-    </div>
+        <div class="output-card final-card">
+          <div class="card-header">
+            <h3>Transcript</h3>
+            <button id="clearBtn" class="icon-btn" title="Clear transcript">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+          <div id="final" class="text-display final-text"></div>
+        </div>
+      </section>
+    </main>
 
-    <div class="note">
-      <p>Notes: This demo uses the Web Speech API in the browser. Chrome/Edge have the best support. If your browser does not support it, see the README for alternatives.</p>
-    </div>
+    <footer class="controls-footer">
+      <div class="action-buttons">
+        <button id="startBtn" class="btn btn-primary">
+          <i data-lucide="play"></i>
+          Start Recording
+        </button>
+        <button id="stopBtn" class="btn btn-secondary" disabled>
+          <i data-lucide="square"></i>
+          Stop
+        </button>
+        <button id="copyBtn" class="btn btn-ghost" title="Copy to clipboard">
+          <i data-lucide="copy"></i>
+        </button>
+      </div>
+      <div class="legal-note">
+        Powered by Web Speech API. Best on Chrome/Edge.
+      </div>
+    </footer>
   </div>
 
   <script src="app.js"></script>
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
 </body>
+
 </html>
