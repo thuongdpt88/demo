@@ -1,0 +1,54 @@
+{
+  "categories": [
+    {
+      "id": "math",
+      "name": "Toán học",
+      "icon": "🔢",
+      "color": "#ff6b6b"
+    },
+    {
+      "id": "english",
+      "name": "Anh văn",
+      "icon": "🇬🇧",
+      "color": "#4ecdc4"
+    },
+    {
+      "id": "communication",
+      "name": "Giao tiếp",
+      "icon": "💬",
+      "color": "#45b7d1"
+    },
+    {
+      "id": "thinking",
+      "name": "Tư duy",
+      "icon": "🧠",
+      "color": "#96ceb4"
+    },
+    {
+      "id": "entertainment",
+      "name": "Giải trí",
+      "icon": "🎮",
+      "color": "#ffeaa7"
+    },
+    {
+      "id": "learning",
+      "name": "Học tập",
+      "icon": "📚",
+      "color": "#dfe6e9"
+    },
+    {
+      "id": "music",
+      "name": "Âm nhạc",
+      "icon": "🎵",
+      "color": "#fd79a8"
+    },
+    {
+      "id": "science",
+      "name": "Khoa học",
+      "icon": "🔬",
+      "color": "#a29bfe"
+    }
+  ],
+  "parentPin": "1234",
+  "globalDailyLimit": 120
+}

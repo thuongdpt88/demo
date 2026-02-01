@@ -1,0 +1,41 @@
+[
+  {
+    "id": "parent",
+    "name": "Phụ huynh",
+    "type": "parent",
+    "avatar": "👨‍👩‍👧",
+    "createdAt": 1769953416594
+  },
+  {
+    "id": "45baf2a9-8f46-4392-b495-84af97984b4f",
+    "name": "Bé Bi",
+    "type": "child",
+    "avatar": "👶",
+    "ageGroup": "0-3",
+    "allowedCategories": [
+      "music",
+      "entertainment"
+    ],
+    "allowedVideos": [],
+    "blockedVideos": [],
+    "dailyLimit": 60,
+    "createdAt": 1769953416595
+  },
+  {
+    "id": "ae7b28a0-b6c0-484a-b101-3044cb3d62fb",
+    "name": "Bé Bo",
+    "type": "child",
+    "avatar": "🧒",
+    "ageGroup": "3-6",
+    "allowedCategories": [
+      "music",
+      "english",
+      "math",
+      "entertainment"
+    ],
+    "allowedVideos": [],
+    "blockedVideos": [],
+    "dailyLimit": 90,
+    "createdAt": 1769953416595
+  }
+]
