@@ -128,73 +128,39 @@ const fetchChannelVideos = async (channelId, channelName, pageToken = null) => {
   }
 };
 
-// Search YouTube videos - Direct call to YouTube Internal API
-// Testing without server proxy to check CORS on deployed server
+// YouTube Search API URL - set to your deployed server URL for production
+// In development: uses Vite proxy to localhost:3002
+// In production: set VITE_YOUTUBE_API_URL environment variable or use default
+const YOUTUBE_API_URL = import.meta.env.VITE_YOUTUBE_API_URL || '/api/youtube-search';
+
+// Search YouTube videos via server proxy (to bypass CORS)
 const searchYouTubeVideos = async (query, channelName = '', page = 1) => {
   const searchQuery = channelName ? `${query} ${channelName}` : query;
 
   try {
-    console.log('Searching YouTube directly:', searchQuery);
+    console.log('Searching YouTube:', searchQuery);
 
-    // Direct call to YouTube Internal API
-    const response = await fetch('https://www.youtube.com/youtubei/v1/search?prettyPrint=false', {
+    const response = await fetch(YOUTUBE_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        context: {
-          client: {
-            hl: 'vi',
-            gl: 'VN',
-            clientName: 'WEB',
-            clientVersion: '2.20240101.00.00'
-          }
-        },
-        query: searchQuery
-      }),
+      body: JSON.stringify({ query: searchQuery }),
       signal: AbortSignal.timeout(15000)
     });
 
     if (!response.ok) {
-      throw new Error(`YouTube API error: ${response.status}`);
+      throw new Error(`API error: ${response.status}`);
     }
 
-    const jsonData = await response.json();
-    const videos = [];
-    const contents = jsonData?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+    const data = await response.json();
 
-    for (const section of contents) {
-      const items = section?.itemSectionRenderer?.contents || [];
-      for (const item of items) {
-        if (item.videoRenderer) {
-          const v = item.videoRenderer;
-          const videoId = v.videoId;
-          if (videoId) {
-            videos.push({
-              id: videoId,
-              videoId: videoId,
-              url: `https://www.youtube.com/watch?v=${videoId}`,
-              title: v.title?.runs?.[0]?.text || 'Unknown',
-              thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-              channel: v.ownerText?.runs?.[0]?.text || 'Unknown',
-              duration: v.lengthText?.simpleText || '',
-              viewCount: v.viewCountText?.simpleText || ''
-            });
-          }
-        }
-        if (videos.length >= 20) break;
-      }
-      if (videos.length >= 20) break;
-    }
-
-    if (videos.length > 0) {
-      console.log('Found:', videos.length, 'videos from YouTube directly');
+    if (data.videos && data.videos.length > 0) {
+      console.log('Found:', data.videos.length, 'videos');
       return {
-        videos: videos,
-        hasMore: videos.length >= 5,
-        totalResults: parseInt(jsonData?.estimatedResults || videos.length)
+        videos: data.videos,
+        hasMore: data.videos.length >= 5,
+        totalResults: data.totalResults || data.videos.length
       };
     }
 
