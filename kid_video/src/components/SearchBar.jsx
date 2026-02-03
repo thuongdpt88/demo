@@ -92,7 +92,7 @@ function SearchBar() {
 
         {/* YouTube Search Button - only for parent mode or when enabled */}
         <motion.button
-          className={`search-btn youtube-search ${youtubeSearchLoading ? 'loading' : ''}`}
+          className={`search-btn ${parentMode ? 'youtube-search' : ''} ${youtubeSearchLoading ? 'loading' : ''}`}
           onClick={handleYouTubeSearch}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -101,15 +101,10 @@ function SearchBar() {
         >
           {youtubeSearchLoading ? (
             <span className="search-spinner">⏳</span>
-          ) : parentMode ? (
-            <>
-              <FaYoutube />
-              <span className="btn-text">Tìm</span>
-            </>
           ) : (
             <>
-              <FaSearch />
-              <span className="btn-text">Tìm</span>
+              <FaSearch className="search-icon-btn" />
+              <span className="btn-text">{parentMode ? 'YouTube' : 'Tìm'}</span>
             </>
           )}
         </motion.button>

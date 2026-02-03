@@ -180,6 +180,7 @@ function ParentMode({ inHeader = false }) {
     channels,
     users,
     addVideo,
+    updateVideo,
     deleteVideo,
     addChannel,
     deleteChannel,
@@ -203,6 +204,7 @@ function ParentMode({ inHeader = false }) {
   const [showSettings, setShowSettings] = useState(false);
   const [mathQuestion, setMathQuestion] = useState(() => generateMathQuestion());
   const [editingUser, setEditingUser] = useState(null);
+  const [editingVideo, setEditingVideo] = useState(null);
   const [saveMessage, setSaveMessage] = useState('');
 
   // States for YouTube search
@@ -542,6 +544,23 @@ function ParentMode({ inHeader = false }) {
     setEditingUser(null);
   };
 
+  const handleUpdateVideo = async () => {
+    if (!editingVideo) return;
+    try {
+      await updateVideo(editingVideo.id, {
+        title: editingVideo.title,
+        channel: editingVideo.channel,
+        ageGroup: editingVideo.ageGroup,
+        category: editingVideo.category
+      });
+      setSaveMessage('✅ Đã cập nhật video!');
+      setTimeout(() => setSaveMessage(''), 2000);
+    } catch (error) {
+      setSaveMessage('❌ Lỗi khi lưu!');
+    }
+    setEditingVideo(null);
+  };
+
   const toggleUserCategory = (catId) => {
     if (editingUser) {
       const current = editingUser.allowedCategories || [];
@@ -744,6 +763,9 @@ function ParentMode({ inHeader = false }) {
                                 {video.channel} • {video.ageGroup} • {categories.find(c => c.id === video.category)?.icon || '🎬'}
                               </span>
                             </div>
+                            <button className="edit-btn" onClick={() => setEditingVideo(video)}>
+                              ✏️
+                            </button>
                             <button className="delete-btn" onClick={() => deleteVideo(video.id)}>
                               🗑️
                             </button>
@@ -895,6 +917,94 @@ function ParentMode({ inHeader = false }) {
                   </div>
 
                   <button className="submit-btn save-btn" onClick={handleUpdateUser}>
+                    💾 Lưu thay đổi
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Edit Video Modal - using Portal */}
+      {createPortal(
+        <AnimatePresence>
+          {editingVideo && (
+            <motion.div
+              className="modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingVideo(null)}
+            >
+              <motion.div
+                className="add-modal modal-scrollable"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button className="close-modal" onClick={() => setEditingVideo(null)}>
+                  <FaTimes />
+                </button>
+                <div className="modal-scroll-content">
+                  <h3>✏️ Chỉnh sửa video</h3>
+
+                  {/* Video Preview */}
+                  <div className="video-preview" style={{ marginBottom: '16px' }}>
+                    <img
+                      src={editingVideo.thumbnail}
+                      alt={editingVideo.title}
+                      className="preview-thumb"
+                      style={{ width: '100%', borderRadius: '12px' }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Tiêu đề:</label>
+                    <input
+                      type="text"
+                      value={editingVideo.title}
+                      onChange={(e) => setEditingVideo({ ...editingVideo, title: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Kênh:</label>
+                    <input
+                      type="text"
+                      value={editingVideo.channel}
+                      onChange={(e) => setEditingVideo({ ...editingVideo, channel: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Độ tuổi:</label>
+                    <select
+                      value={editingVideo.ageGroup || 'all'}
+                      onChange={(e) => setEditingVideo({ ...editingVideo, ageGroup: e.target.value })}
+                    >
+                      <option value="all">Mọi lứa tuổi</option>
+                      <option value="0-3">0-3 tuổi</option>
+                      <option value="3-6">3-6 tuổi</option>
+                      <option value="6-9">6-9 tuổi</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Chủ đề:</label>
+                    <select
+                      value={editingVideo.category || 'entertainment'}
+                      onChange={(e) => setEditingVideo({ ...editingVideo, category: e.target.value })}
+                    >
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button className="submit-btn save-btn" onClick={handleUpdateVideo}>
                     💾 Lưu thay đổi
                   </button>
                 </div>
