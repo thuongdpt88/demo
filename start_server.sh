@@ -101,8 +101,10 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
                             if video_id and title:
                                 videos.append({
                                     'id': video_id,
+                                    'videoId': video_id,
+                                    'url': f'https://www.youtube.com/watch?v={video_id}',
                                     'title': title,
-                                    'thumbnail': thumbnail,
+                                    'thumbnail': f'https://img.youtube.com/vi/{video_id}/mqdefault.jpg',
                                     'channel': channel
                                 })
                                 if len(videos) >= 20:
