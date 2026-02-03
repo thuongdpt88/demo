@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { videosAPI, channelsAPI, usersAPI, settingsAPI } from '../api';
+import * as db from '../realtimeDb';
+
+// Helper to extract YouTube video ID
+const extractVideoId = (url) => {
+  if (!url) return null;
+  if (url.length === 11 && /^[a-zA-Z0-9_-]+$/.test(url)) {
+    return url;
+  }
+  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[7].length === 11) ? match[7] : null;
+};
 
 // Categories
 export const categories = [
@@ -17,11 +28,11 @@ export const categories = [
 export const useVideoStore = create(
   persist(
     (set, get) => ({
-      // Data
+      // Data from JSON database
       videos: [],
       channels: [],
       users: [],
-      settings: { categories },
+      settings: { categories, dailyLimit: 60 },
 
       // Current state
       currentVideo: null,
@@ -39,32 +50,48 @@ export const useVideoStore = create(
       dailyLimit: 60,
       todayWatchTime: 0,
 
-      // Loading states
+      // Unavailable videos
+      unavailableVideos: [],
+
+      // Loading
       isLoading: false,
       error: null,
+
+      // ============ DIRECT SETTERS (for real-time sync) ============
+      setVideos: (videos) => set({ videos }),
+      setUsers: (users) => set({ users }),
+      setChannels: (channels) => set({ channels }),
 
       // ============ INITIALIZATION ============
       initializeData: async () => {
         set({ isLoading: true, error: null });
         try {
-          const [videos, channels, users, settings] = await Promise.all([
-            videosAPI.getAll(),
-            channelsAPI.getAll(),
-            usersAPI.getAll(),
-            settingsAPI.get()
-          ]);
+          const data = await db.initDatabase();
           set({
-            videos,
-            channels,
-            users,
-            settings: { ...get().settings, ...settings },
+            videos: data.videos || [],
+            channels: data.channels || [],
+            users: data.users || [],
+            settings: { ...get().settings, ...data.settings },
+            dailyLimit: data.settings?.dailyLimit || 60,
             isLoading: false
           });
         } catch (error) {
-          console.error('Failed to initialize data:', error);
+          console.error('Failed to initialize:', error);
           set({ error: error.message, isLoading: false });
         }
       },
+
+      // ============ VIDEO AVAILABILITY ============
+      markVideoUnavailable: (videoId) => {
+        const { unavailableVideos } = get();
+        if (!unavailableVideos.includes(videoId)) {
+          set({ unavailableVideos: [...unavailableVideos, videoId] });
+        }
+      },
+
+      clearUnavailableVideos: () => set({ unavailableVideos: [] }),
+
+      isVideoAvailable: (videoId) => !get().unavailableVideos.includes(videoId),
 
       // ============ USER / LOGIN ============
       login: (userId) => {
@@ -75,124 +102,90 @@ export const useVideoStore = create(
             currentUser: user,
             dailyLimit: user.dailyLimit || 60
           });
-          if (user.type === 'child') {
-            get().loadVideosForUser(userId);
-          }
           return true;
         }
         return false;
       },
 
-      logout: () => {
-        set({ currentUser: null, parentMode: false });
-      },
-
-      loadVideosForUser: async (userId) => {
-        try {
-          const videos = await videosAPI.getForUser(userId);
-          set({ videos });
-        } catch (error) {
-          console.error('Failed to load videos for user:', error);
-        }
-      },
+      logout: () => set({ currentUser: null, parentMode: false }),
 
       // ============ VIDEO ACTIONS ============
       addVideo: async (video) => {
-        try {
-          const newVideo = await videosAPI.create(video);
-          set((state) => ({ videos: [...state.videos, newVideo] }));
-          return newVideo;
-        } catch (error) {
-          console.error('Failed to add video:', error);
-          throw error;
-        }
+        const newVideo = await db.addVideo(video);
+        set((state) => ({ videos: [...state.videos, newVideo] }));
+        return newVideo;
       },
 
       updateVideo: async (id, updates) => {
-        try {
-          const updatedVideo = await videosAPI.update(id, updates);
-          set((state) => ({
-            videos: state.videos.map(v => v.id === id ? updatedVideo : v)
-          }));
-          return updatedVideo;
-        } catch (error) {
-          console.error('Failed to update video:', error);
-          throw error;
-        }
+        await db.updateVideo(id, updates);
+        set((state) => ({
+          videos: state.videos.map(v => v.id === id ? { ...v, ...updates } : v)
+        }));
       },
 
       deleteVideo: async (id) => {
-        try {
-          await videosAPI.delete(id);
-          set((state) => ({
-            videos: state.videos.filter(v => v.id !== id)
-          }));
-        } catch (error) {
-          console.error('Failed to delete video:', error);
-          throw error;
-        }
+        await db.deleteVideo(id);
+        set((state) => ({ videos: state.videos.filter(v => v.id !== id) }));
+      },
+
+      // Add video from YouTube URL
+      addVideoFromURL: async (url, category = 'entertainment', ageGroup = 'all') => {
+        const videoId = extractVideoId(url);
+        if (!videoId) throw new Error('URL YouTube không hợp lệ');
+
+        const existing = get().videos.find(v => extractVideoId(v.url) === videoId);
+        if (existing) throw new Error('Video này đã có trong danh sách');
+
+        // Validate via oEmbed
+        const response = await fetch(
+          `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+        );
+        if (!response.ok) throw new Error('Video không tồn tại hoặc không khả dụng');
+
+        const data = await response.json();
+        const newVideo = await db.addVideo({
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          title: data.title,
+          thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+          channel: data.author_name,
+          category,
+          ageGroup
+        });
+
+        set((state) => ({ videos: [...state.videos, newVideo] }));
+        return newVideo;
       },
 
       // ============ CHANNEL ACTIONS ============
       addChannel: async (channel) => {
-        try {
-          const newChannel = await channelsAPI.create(channel);
-          set((state) => ({ channels: [...state.channels, newChannel] }));
-          return newChannel;
-        } catch (error) {
-          console.error('Failed to add channel:', error);
-          throw error;
-        }
+        const newChannel = await db.addChannel(channel);
+        set((state) => ({ channels: [...state.channels, newChannel] }));
+        return newChannel;
       },
 
       deleteChannel: async (id) => {
-        try {
-          await channelsAPI.delete(id);
-          set((state) => ({
-            channels: state.channels.filter(c => c.id !== id)
-          }));
-        } catch (error) {
-          console.error('Failed to delete channel:', error);
-          throw error;
-        }
+        await db.deleteChannel(id);
+        set((state) => ({ channels: state.channels.filter(c => c.id !== id) }));
       },
 
       // ============ USER MANAGEMENT ============
       addUser: async (user) => {
-        try {
-          const newUser = await usersAPI.create(user);
-          set((state) => ({ users: [...state.users, newUser] }));
-          return newUser;
-        } catch (error) {
-          console.error('Failed to add user:', error);
-          throw error;
-        }
+        const newUser = await db.addUser(user);
+        set((state) => ({ users: [...state.users, newUser] }));
+        return newUser;
       },
 
       updateUser: async (id, updates) => {
-        try {
-          const updatedUser = await usersAPI.update(id, updates);
-          set((state) => ({
-            users: state.users.map(u => u.id === id ? updatedUser : u),
-            currentUser: state.currentUser?.id === id ? updatedUser : state.currentUser
-          }));
-          return updatedUser;
-        } catch (error) {
-          console.error('Failed to update user:', error);
-          throw error;
-        }
+        await db.updateUser(id, updates);
+        set((state) => ({
+          users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
+          currentUser: state.currentUser?.id === id ? { ...state.currentUser, ...updates } : state.currentUser
+        }));
       },
 
       deleteUser: async (id) => {
-        try {
-          await usersAPI.delete(id);
-          set((state) => ({
-            users: state.users.filter(u => u.id !== id)
-          }));
-        } catch (error) {
-          console.error('Failed to delete user:', error);
-          throw error;
-        }
+        await db.deleteUser(id);
+        set((state) => ({ users: state.users.filter(u => u.id !== id) }));
       },
 
       // ============ PLAYBACK ============
@@ -238,17 +231,19 @@ export const useVideoStore = create(
       })),
 
       resetDailyWatchTime: () => set({ todayWatchTime: 0 }),
-      setDailyLimit: (limit) => set({ dailyLimit: limit }),
+
+      setDailyLimit: async (limit) => {
+        await db.updateSettings({ dailyLimit: limit });
+        set({ dailyLimit: limit });
+      },
 
       // ============ FILTERED VIDEOS ============
       getFilteredVideos: () => {
         const state = get();
-        let filtered = state.videos;
+        let filtered = state.videos.filter(v => !state.unavailableVideos.includes(v.id));
 
         if (state.selectedAgeGroup !== 'all') {
-          filtered = filtered.filter(v =>
-            v.ageGroup === state.selectedAgeGroup || v.ageGroup === 'all'
-          );
+          filtered = filtered.filter(v => v.ageGroup === state.selectedAgeGroup || v.ageGroup === 'all');
         }
 
         if (state.selectedCategory !== 'all') {
@@ -258,26 +253,34 @@ export const useVideoStore = create(
         if (state.searchQuery) {
           const query = state.searchQuery.toLowerCase();
           filtered = filtered.filter(v =>
-            v.title.toLowerCase().includes(query) ||
-            v.channel.toLowerCase().includes(query) ||
-            (v.category && categories.find(c => c.id === v.category)?.name.toLowerCase().includes(query))
+            v.title?.toLowerCase().includes(query) ||
+            v.channel?.toLowerCase().includes(query)
           );
         }
 
         return filtered;
       },
 
+      // ============ EXPORT/IMPORT ============
+      exportData: async () => await db.downloadDatabase(),
+
+      importData: async (jsonData) => {
+        const result = await db.importDatabase(jsonData);
+        set({
+          videos: result.videos,
+          channels: result.channels,
+          users: result.users
+        });
+      },
+
       // ============ RESET ============
       resetToDefaults: async () => {
-        try {
-          const [videos, channels] = await Promise.all([
-            videosAPI.getAll(),
-            channelsAPI.getAll()
-          ]);
-          set({ videos, channels });
-        } catch (error) {
-          console.error('Failed to reset:', error);
-        }
+        const data = await db.resetDatabase();
+        set({
+          videos: data.videos || [],
+          channels: data.channels || [],
+          users: data.users || []
+        });
       }
     }),
     {
@@ -286,21 +289,16 @@ export const useVideoStore = create(
         currentUser: state.currentUser,
         watchHistory: state.watchHistory,
         favorites: state.favorites,
-        todayWatchTime: state.todayWatchTime
+        todayWatchTime: state.todayWatchTime,
+        unavailableVideos: state.unavailableVideos
       })
     }
   )
 );
 
-// Helper to extract YouTube video ID
-export const extractYouTubeId = (url) => {
-  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[7].length === 11) ? match[7] : null;
-};
-
-// Helper to get thumbnail
+// Export helpers
+export const extractYouTubeId = extractVideoId;
 export const getYouTubeThumbnail = (url) => {
-  const videoId = extractYouTubeId(url);
+  const videoId = extractVideoId(url);
   return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
 };

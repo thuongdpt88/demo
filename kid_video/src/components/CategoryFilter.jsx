@@ -13,16 +13,18 @@ function CategoryFilter() {
   return (
     <div className="category-filter">
       <div className="category-scroll">
-        {allCategories.map((cat) => (
+        {allCategories.map((cat, index) => (
           <motion.button
             key={cat.id}
             className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
             style={{
               '--cat-color': cat.color,
-              background: selectedCategory === cat.id ? cat.color : 'white',
             }}
             onClick={() => setCategory(cat.id)}
-            whileHover={{ scale: 1.05, y: -2 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.05 }}
+            whileHover={{ scale: 1.08, y: -3 }}
             whileTap={{ scale: 0.95 }}
           >
             <span className="category-icon">{cat.icon}</span>

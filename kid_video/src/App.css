@@ -219,8 +219,80 @@ body::before {
   box-shadow: 0 -4px 30px rgba(107, 91, 255, 0.1);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive - Mobile Small */
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 0 0 20px 20px;
+    gap: 0.75rem;
+  }
+
+  .header-content {
+    text-align: center;
+  }
+
+  .app-title {
+    font-size: 1.4rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .user-info {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .current-user {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .user-avatar-small {
+    font-size: 1.2rem;
+  }
+
+  .user-name-small {
+    font-size: 0.8rem;
+  }
+
+  .logout-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .watch-time-indicator {
+    align-items: center;
+    padding: 8px 12px;
+    width: 100%;
+  }
+
+  .watch-time-bar {
+    width: 100px;
+  }
+
+  .main-content {
+    padding: 0.75rem;
+  }
+
+  .controls {
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .footer {
+    padding: 1rem;
+    font-size: 0.8rem;
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+/* Responsive - Mobile */
+@media (min-width: 481px) and (max-width: 768px) {
   .header {
     flex-direction: column;
     text-align: center;
@@ -247,5 +319,32 @@ body::before {
   .user-info {
     flex-wrap: wrap;
     justify-content: center;
+  }
+}
+
+/* Responsive - Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .header {
+    padding: 1rem 1.5rem;
+  }
+
+  .main-content {
+    padding: 1.25rem;
+  }
+
+  .app-title {
+    font-size: 1.8rem;
+  }
+}
+
+/* Responsive - Large screens */
+@media (min-width: 1025px) {
+  .header {
+    padding: 1.25rem 2rem;
+  }
+
+  .main-content {
+    padding: 2rem;
+    max-width: 1600px;
   }
 }

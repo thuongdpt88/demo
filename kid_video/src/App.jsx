@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaUserShield, FaSignOutAlt } from 'react-icons/fa';
 import SearchBar from './components/SearchBar';
+import SearchResults from './components/SearchResults';
 import AgeFilter from './components/AgeFilter';
 import CategoryFilter from './components/CategoryFilter';
 import VideoGrid from './components/VideoGrid';
@@ -9,14 +10,38 @@ import VideoPlayer from './components/VideoPlayer';
 import ParentMode from './components/ParentMode';
 import LoginScreen from './components/LoginScreen';
 import { useVideoStore } from './store/videoStore';
+import { subscribeToVideos, subscribeToUsers, subscribeToChannels } from './realtimeDb';
 import './App.css';
 
 function App() {
-  const { currentUser, todayWatchTime, dailyLimit, logout, initializeData } = useVideoStore();
+  const { currentUser, todayWatchTime, dailyLimit, logout, initializeData, setVideos, setUsers, setChannels } = useVideoStore();
   const watchProgress = Math.min((todayWatchTime / dailyLimit) * 100, 100);
 
   useEffect(() => {
     initializeData();
+
+    // Real-time sync: Listen for changes from other browsers
+    const unsubVideos = subscribeToVideos((videos) => {
+      console.log('Videos synced:', videos.length);
+      setVideos(videos);
+    });
+
+    const unsubUsers = subscribeToUsers((users) => {
+      console.log('Users synced:', users.length);
+      setUsers(users);
+    });
+
+    const unsubChannels = subscribeToChannels((channels) => {
+      console.log('Channels synced:', channels.length);
+      setChannels(channels);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      unsubVideos();
+      unsubUsers();
+      unsubChannels();
+    };
   }, []);
 
   // Show login screen if no user logged in
@@ -80,6 +105,8 @@ function App() {
           <CategoryFilter />
           <AgeFilter />
         </motion.div>
+
+        <SearchResults />
 
         <VideoGrid />
       </main>

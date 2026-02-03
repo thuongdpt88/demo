@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaHeart, FaPlay } from 'react-icons/fa';
 import { useVideoStore, categories } from '../store/videoStore';
 import './VideoCard.css';
 
 function VideoCard({ video, index }) {
-  const { setCurrentVideo, favorites } = useVideoStore();
+  const { setCurrentVideo, favorites, markVideoUnavailable } = useVideoStore();
+  const [thumbnailError, setThumbnailError] = useState(false);
   const isFavorite = favorites.includes(video.id);
 
   const ageColors = {
@@ -15,6 +17,17 @@ function VideoCard({ video, index }) {
   };
 
   const category = categories.find(c => c.id === video.category);
+
+  const handleThumbnailError = () => {
+    setThumbnailError(true);
+  };
+
+  const defaultThumbnail = 'data:image/svg+xml,' + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
+      <rect fill="#1A3A32" width="320" height="180"/>
+      <text x="160" y="90" fill="#00D4AA" font-size="48" text-anchor="middle" dominant-baseline="middle">🎬</text>
+    </svg>
+  `);
 
   return (
     <motion.div
@@ -28,10 +41,11 @@ function VideoCard({ video, index }) {
     >
       <div className="thumbnail-container">
         <img
-          src={video.thumbnail}
+          src={thumbnailError ? defaultThumbnail : video.thumbnail}
           alt={video.title}
           className="thumbnail"
           loading="lazy"
+          onError={handleThumbnailError}
         />
         <div className="play-overlay">
           <motion.div

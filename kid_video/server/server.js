@@ -11,6 +11,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3001;
 
+// YouTube Data API Key (get from Google Cloud Console)
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || 'YOUR_API_KEY_HERE';
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -21,6 +24,8 @@ const VIDEOS_FILE = path.join(DB_PATH, 'videos.json');
 const CHANNELS_FILE = path.join(DB_PATH, 'channels.json');
 const USERS_FILE = path.join(DB_PATH, 'users.json');
 const SETTINGS_FILE = path.join(DB_PATH, 'settings.json');
+const SEARCH_CACHE_FILE = path.join(DB_PATH, 'search_cache.json');
+const WATCH_HISTORY_FILE = path.join(DB_PATH, 'watch_history.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DB_PATH)) {
@@ -366,4 +371,238 @@ app.get('/api/users/:id/videos', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Kid Video Server running at http://localhost:${PORT}`);
   console.log(`📁 Data stored in: ${DB_PATH}`);
+});
+
+// ============ YOUTUBE SEARCH API ============
+
+// Search YouTube videos
+app.get('/api/youtube/search', async (req, res) => {
+  const { q, pageToken, maxResults = 20 } = req.query;
+
+  if (!q) {
+    return res.status(400).json({ error: 'Query parameter "q" is required' });
+  }
+
+  // Check cache first
+  const cache = readJSON(SEARCH_CACHE_FILE, {});
+  const cacheKey = `${q}_${pageToken || 'first'}_${maxResults}`;
+  const cacheEntry = cache[cacheKey];
+
+  // Use cache if less than 1 hour old
+  if (cacheEntry && Date.now() - cacheEntry.timestamp < 3600000) {
+    return res.json(cacheEntry.data);
+  }
+
+  try {
+    // Add "for kids" to make search safer
+    const safeQuery = `${q} for kids`;
+    const params = new URLSearchParams({
+      part: 'snippet',
+      q: safeQuery,
+      type: 'video',
+      maxResults: maxResults.toString(),
+      safeSearch: 'strict',
+      videoEmbeddable: 'true',
+      key: YOUTUBE_API_KEY
+    });
+
+    if (pageToken) {
+      params.append('pageToken', pageToken);
+    }
+
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+
+    if (!response.ok) {
+      // If API fails, try with oEmbed fallback
+      return res.json(await searchWithOEmbed(q, maxResults));
+    }
+
+    const data = await response.json();
+
+    const result = {
+      videos: data.items.map(item => ({
+        id: uuidv4(),
+        videoId: item.id.videoId,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        title: item.snippet.title,
+        thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+        channel: item.snippet.channelTitle,
+        channelId: item.snippet.channelId,
+        publishedAt: item.snippet.publishedAt,
+        description: item.snippet.description
+      })),
+      nextPageToken: data.nextPageToken,
+      prevPageToken: data.prevPageToken,
+      totalResults: data.pageInfo?.totalResults || 0
+    };
+
+    // Cache the result
+    cache[cacheKey] = { data: result, timestamp: Date.now() };
+    writeJSON(SEARCH_CACHE_FILE, cache);
+
+    res.json(result);
+  } catch (error) {
+    console.error('YouTube API error:', error);
+    // Fallback to oEmbed search
+    res.json(await searchWithOEmbed(q, maxResults));
+  }
+});
+
+// Fallback search using curated channels
+async function searchWithOEmbed(query, maxResults) {
+  // Curated safe kids channels
+  const safeChannels = [
+    { name: 'Pinkfong', channelId: 'UCcdwLMPsaU2ezNSJU1nFoBQ' },
+    { name: 'Cocomelon', channelId: 'UCbCmjCuTUZos6Inko4u57UQ' },
+    { name: 'Super Simple Songs', channelId: 'UCLsooMJoIpl_7ux2jvdPB-Q' },
+    { name: 'Little Baby Bum', channelId: 'UCEHopIloGjsWzM0IfBJCfxA' },
+    { name: 'BabyBus', channelId: 'UCpYye8D5fFMUPf9nSfgd4bA' },
+    { name: 'Kids TV', channelId: 'UC4NALVCmcmL5ntpKx19_ANg' }
+  ];
+
+  // Return curated videos based on common searches
+  const curatedVideos = readJSON(VIDEOS_FILE, []);
+  const filtered = curatedVideos.filter(v =>
+    v.title?.toLowerCase().includes(query.toLowerCase()) ||
+    v.channel?.toLowerCase().includes(query.toLowerCase())
+  );
+
+  return {
+    videos: filtered.slice(0, parseInt(maxResults)),
+    nextPageToken: null,
+    totalResults: filtered.length,
+    source: 'local'
+  };
+}
+
+// Get videos from a specific channel
+app.get('/api/youtube/channel/:channelId/videos', async (req, res) => {
+  const { channelId } = req.params;
+  const { pageToken, maxResults = 20 } = req.query;
+
+  try {
+    const params = new URLSearchParams({
+      part: 'snippet',
+      channelId,
+      type: 'video',
+      maxResults: maxResults.toString(),
+      order: 'date',
+      safeSearch: 'strict',
+      key: YOUTUBE_API_KEY
+    });
+
+    if (pageToken) {
+      params.append('pageToken', pageToken);
+    }
+
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+
+    if (!response.ok) {
+      throw new Error('YouTube API error');
+    }
+
+    const data = await response.json();
+
+    res.json({
+      videos: data.items.map(item => ({
+        id: uuidv4(),
+        videoId: item.id.videoId,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        title: item.snippet.title,
+        thumbnail: item.snippet.thumbnails.medium?.url,
+        channel: item.snippet.channelTitle,
+        channelId: item.snippet.channelId,
+        publishedAt: item.snippet.publishedAt
+      })),
+      nextPageToken: data.nextPageToken,
+      totalResults: data.pageInfo?.totalResults || 0
+    });
+  } catch (error) {
+    console.error('Channel videos error:', error);
+    res.status(500).json({ error: 'Failed to fetch channel videos' });
+  }
+});
+
+// Validate video exists
+app.get('/api/youtube/validate/:videoId', async (req, res) => {
+  const { videoId } = req.params;
+
+  try {
+    const response = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      res.json({
+        valid: true,
+        title: data.title,
+        author: data.author_name,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+      });
+    } else {
+      res.json({ valid: false });
+    }
+  } catch (error) {
+    res.json({ valid: false });
+  }
+});
+
+// ============ WATCH HISTORY API ============
+
+// Get watch history for a user
+app.get('/api/users/:userId/history', (req, res) => {
+  const history = readJSON(WATCH_HISTORY_FILE, {});
+  res.json(history[req.params.userId] || []);
+});
+
+// Add to watch history
+app.post('/api/users/:userId/history', (req, res) => {
+  const { userId } = req.params;
+  const { videoId, title, thumbnail, watchedAt, duration } = req.body;
+
+  const history = readJSON(WATCH_HISTORY_FILE, {});
+  if (!history[userId]) {
+    history[userId] = [];
+  }
+
+  // Add to beginning, limit to 100 entries
+  history[userId].unshift({
+    videoId,
+    title,
+    thumbnail,
+    watchedAt: watchedAt || Date.now(),
+    duration
+  });
+
+  history[userId] = history[userId].slice(0, 100);
+  writeJSON(WATCH_HISTORY_FILE, history);
+
+  res.json({ success: true });
+});
+
+// Update daily watch time
+app.put('/api/users/:userId/watchtime', (req, res) => {
+  const { userId } = req.params;
+  const { minutes, date } = req.body;
+
+  const users = readJSON(USERS_FILE);
+  const userIndex = users.findIndex(u => u.id === userId);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  if (!users[userIndex].watchTime) {
+    users[userIndex].watchTime = {};
+  }
+
+  const today = date || new Date().toISOString().split('T')[0];
+  users[userIndex].watchTime[today] = (users[userIndex].watchTime[today] || 0) + minutes;
+
+  writeJSON(USERS_FILE, users);
+  res.json({
+    date: today,
+    totalMinutes: users[userIndex].watchTime[today]
+  });
 });
