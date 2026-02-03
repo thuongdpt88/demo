@@ -83,7 +83,7 @@ const fetchVideoInfo = async (url) => {
 };
 
 // Fetch channel videos using YouTube RSS feed (no API key needed)
-const fetchChannelVideos = async (channelId, channelName) => {
+const fetchChannelVideos = async (channelId, channelName, pageToken = null) => {
   try {
     // Use a CORS proxy for the RSS feed
     const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
@@ -102,7 +102,7 @@ const fetchChannelVideos = async (channelId, channelName) => {
     const videos = [];
 
     entries.forEach((entry, index) => {
-      if (index >= 20) return; // Limit to 20 videos
+      if (index >= 50) return; // Limit to 50 videos
 
       const videoId = entry.querySelector('yt\\:videoId, videoId')?.textContent;
       const title = entry.querySelector('title')?.textContent;
@@ -121,37 +121,51 @@ const fetchChannelVideos = async (channelId, channelName) => {
       }
     });
 
-    return videos;
+    return { videos, hasMore: false };
   } catch (error) {
     console.error('Error fetching channel videos:', error);
-    return [];
+    return { videos: [], hasMore: false };
   }
 };
 
-// Search YouTube videos (using Invidious API - no key needed)
-const searchYouTubeVideos = async (query, channelName = '') => {
-  try {
-    // Use Invidious API instances for search
-    const searchQuery = channelName ? `${query} ${channelName}` : query;
-    const apiUrl = `https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(searchQuery)}&type=video`;
+// Search YouTube videos using local YouTube API server (via Vite proxy)
+// API server runs on port 3002, Vite proxies /api/youtube-search to it
+const searchYouTubeVideos = async (query, channelName = '', page = 1) => {
+  const searchQuery = channelName ? `${query} ${channelName}` : query;
 
-    const response = await fetch(apiUrl);
-    if (!response.ok) throw new Error('Search failed');
+  try {
+    console.log('Searching YouTube:', searchQuery);
+
+    // Call via Vite proxy - automatically routes to port 3002
+    const response = await fetch('/api/youtube-search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: searchQuery }),
+      signal: AbortSignal.timeout(15000)
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
 
     const data = await response.json();
 
-    return data.slice(0, 20).map(video => ({
-      id: video.videoId,
-      videoId: video.videoId,
-      title: video.title,
-      thumbnail: `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
-      url: `https://www.youtube.com/watch?v=${video.videoId}`,
-      channel: video.author || channelName,
-      duration: video.lengthSeconds
-    }));
+    if (data.videos && data.videos.length > 0) {
+      console.log('Found:', data.videos.length, 'videos from', data.source || 'youtube');
+      return {
+        videos: data.videos,
+        hasMore: data.videos.length >= 5,
+        totalResults: data.totalResults || data.videos.length
+      };
+    }
+
+    console.log('No videos found');
+    return { videos: [], hasMore: false };
   } catch (error) {
-    console.error('Search failed:', error);
-    return [];
+    console.error('YouTube search error:', error.message);
+    return { videos: [], hasMore: false };
   }
 };
 
@@ -196,6 +210,9 @@ function ParentMode({ inHeader = false }) {
   const [selectedVideos, setSelectedVideos] = useState([]); // Selected videos to add
   const [isSearching, setIsSearching] = useState(false);
   const [isFetchingInfo, setIsFetchingInfo] = useState(false);
+  const [searchPage, setSearchPage] = useState(1);
+  const [hasMoreResults, setHasMoreResults] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const childUsers = users.filter(u => u.type === 'child');
 
@@ -288,10 +305,13 @@ function ParentMode({ inHeader = false }) {
       if (selectedChannel && searchMode === 'search') {
         setIsSearching(true);
         setSearchResults([]);
+        setSearchPage(1);
+        setHasMoreResults(false);
         const channel = channels.find(c => c.id === selectedChannel);
         if (channel) {
-          const videos = await fetchChannelVideos(channel.channelId, channel.name);
-          setSearchResults(videos);
+          const result = await fetchChannelVideos(channel.channelId, channel.name);
+          setSearchResults(result.videos);
+          setHasMoreResults(result.hasMore);
         }
         setIsSearching(false);
       }
@@ -300,16 +320,34 @@ function ParentMode({ inHeader = false }) {
     loadChannelVideos();
   }, [selectedChannel, searchMode, channels]);
 
-  // Handle search within channel
+  // Handle search within channel or keyword search
   const handleSearch = async () => {
+    // Keyword search mode (no channel required)
+    if (searchMode === 'keyword') {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      setSearchPage(1);
+      const result = await searchYouTubeVideos(searchQuery, '', 1);
+      setSearchResults(result.videos);
+      setHasMoreResults(result.hasMore);
+      setIsSearching(false);
+      return;
+    }
+
+    // Channel search mode
     if (!searchQuery.trim()) {
       // If no query, reload channel videos
       if (selectedChannel) {
         setIsSearching(true);
+        setSearchPage(1);
         const channel = channels.find(c => c.id === selectedChannel);
         if (channel) {
-          const videos = await fetchChannelVideos(channel.channelId, channel.name);
-          setSearchResults(videos);
+          const result = await fetchChannelVideos(channel.channelId, channel.name);
+          setSearchResults(result.videos);
+          setHasMoreResults(result.hasMore);
         }
         setIsSearching(false);
       }
@@ -317,13 +355,42 @@ function ParentMode({ inHeader = false }) {
     }
 
     setIsSearching(true);
+    setSearchPage(1);
     const channel = channels.find(c => c.id === selectedChannel);
     const channelName = channel?.name || '';
 
     // Search with channel name to filter results
-    const results = await searchYouTubeVideos(searchQuery, channelName);
-    setSearchResults(results);
+    const result = await searchYouTubeVideos(searchQuery, channelName, 1);
+    setSearchResults(result.videos);
+    setHasMoreResults(result.hasMore);
     setIsSearching(false);
+  };
+
+  // Handle load more results
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMoreResults) return;
+
+    setIsLoadingMore(true);
+    const nextPage = searchPage + 1;
+
+    // For keyword search, don't use channel name
+    const channel = searchMode === 'keyword' ? null : channels.find(c => c.id === selectedChannel);
+    const channelName = channel?.name || '';
+
+    const result = await searchYouTubeVideos(searchQuery || '', channelName, nextPage);
+
+    if (result.videos.length > 0) {
+      // Filter out duplicates
+      const existingIds = new Set(searchResults.map(v => v.videoId));
+      const newVideos = result.videos.filter(v => !existingIds.has(v.videoId));
+
+      setSearchResults(prev => [...prev, ...newVideos]);
+      setSearchPage(nextPage);
+      setHasMoreResults(result.hasMore);
+    } else {
+      setHasMoreResults(false);
+    }
+    setIsLoadingMore(false);
   };
 
   // Toggle video selection
@@ -352,14 +419,14 @@ function ParentMode({ inHeader = false }) {
   const handleAddSelectedVideos = async () => {
     if (selectedVideos.length === 0) return;
 
-    const channel = channels.find(c => c.id === selectedChannel);
+    const channel = selectedChannel ? channels.find(c => c.id === selectedChannel) : null;
 
     try {
       for (const video of selectedVideos) {
         await addVideo({
           url: video.url,
           title: video.title,
-          channel: video.channel || channel?.name || '',
+          channel: video.channel || channel?.name || 'YouTube',
           thumbnail: video.thumbnail,
           ageGroup: channel?.ageGroup || 'all',
           category: channel?.category || 'entertainment'
@@ -495,6 +562,8 @@ function ParentMode({ inHeader = false }) {
     setSelectedVideos([]);
     setSearchQuery('');
     setSelectedChannel('');
+    setSearchPage(1);
+    setHasMoreResults(false);
   };
 
   return (
@@ -861,24 +930,141 @@ function ParentMode({ inHeader = false }) {
                       <h3>🎬 Thêm video mới</h3>
 
                       {/* Mode Toggle */}
-                      {channels.length > 0 && (
-                        <div className="mode-toggle">
-                          <button
-                            className={`mode-btn ${searchMode === 'url' ? 'active' : ''}`}
-                            onClick={() => {
-                              setSearchMode('url');
-                              setSearchResults([]);
-                              setSelectedVideos([]);
-                            }}
-                          >
-                            🔗 Nhập URL
-                          </button>
+                      <div className="mode-toggle">
+                        <button
+                          className={`mode-btn ${searchMode === 'url' ? 'active' : ''}`}
+                          onClick={() => {
+                            setSearchMode('url');
+                            setSearchResults([]);
+                            setSelectedVideos([]);
+                          }}
+                        >
+                          🔗 Nhập URL
+                        </button>
+                        <button
+                          className={`mode-btn ${searchMode === 'keyword' ? 'active' : ''}`}
+                          onClick={() => {
+                            setSearchMode('keyword');
+                            setSearchResults([]);
+                            setSelectedVideos([]);
+                            setSelectedChannel('');
+                          }}
+                        >
+                          🔍 Tìm video
+                        </button>
+                        {channels.length > 0 && (
                           <button
                             className={`mode-btn ${searchMode === 'search' ? 'active' : ''}`}
                             onClick={() => setSearchMode('search')}
                           >
-                            🔍 Tìm từ kênh
+                            📺 Tìm từ kênh
                           </button>
+                        )}
+                      </div>
+
+                      {/* Keyword Search Mode (no channel required) */}
+                      {searchMode === 'keyword' && (
+                        <div className="keyword-search-section">
+                          {/* Search Box */}
+                          <div className="search-box">
+                            <div className="search-input-wrapper">
+                              <FaSearch className="search-icon" />
+                              <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Nhập từ khóa tìm kiếm..."
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                autoFocus
+                              />
+                            </div>
+                            <button className="search-btn" onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
+                              {isSearching ? '⏳' : '🔍'}
+                            </button>
+                          </div>
+
+                          {/* Search Results */}
+                          {isSearching && (
+                            <div className="search-loading">
+                              <span className="loading-spinner-small">⏳</span>
+                              <span>Đang tìm kiếm video...</span>
+                            </div>
+                          )}
+
+                          {!isSearching && searchResults.length > 0 && (
+                            <>
+                              <div className="search-results-header">
+                                <span>📺 {searchResults.length} video</span>
+                                {selectedVideos.length > 0 && (
+                                  <span className="selected-count">
+                                    ✅ Đã chọn: {selectedVideos.length}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="search-results">
+                                {searchResults.map(video => {
+                                  const inLibrary = isVideoInLibrary(video.videoId);
+                                  const selected = isVideoSelected(video.videoId);
+
+                                  return (
+                                    <div
+                                      key={video.videoId}
+                                      className={`search-result-item ${selected ? 'selected' : ''} ${inLibrary ? 'in-library' : ''}`}
+                                      onClick={() => !inLibrary && toggleVideoSelection(video)}
+                                    >
+                                      <div className="result-thumb-wrapper">
+                                        <img src={video.thumbnail} alt={video.title} className="result-thumb" />
+                                        {selected && (
+                                          <div className="check-overlay">
+                                            <FaCheck />
+                                          </div>
+                                        )}
+                                        {inLibrary && (
+                                          <div className="in-library-badge">
+                                            ✓ Đã có
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="result-info">
+                                        <span className="result-title">{video.title}</span>
+                                        <span className="result-channel">{video.channel}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Load More Button - show when we have results */}
+                              {searchResults.length >= 5 && (
+                                <button
+                                  className="load-more-btn"
+                                  onClick={handleLoadMore}
+                                  disabled={isLoadingMore}
+                                >
+                                  {isLoadingMore ? '⏳ Đang tải...' : '📥 Tìm thêm video'}
+                                </button>
+                              )}
+
+                              {selectedVideos.length > 0 && (
+                                <button className="submit-btn add-selected-btn" onClick={handleAddSelectedVideos}>
+                                  <FaPlus /> Thêm {selectedVideos.length} video đã chọn
+                                </button>
+                              )}
+                            </>
+                          )}
+
+                          {!isSearching && searchResults.length === 0 && searchQuery.trim() && (
+                            <div className="no-results">
+                              <p>😕 Không tìm thấy video</p>
+                              <small>Thử tìm kiếm với từ khóa khác</small>
+                            </div>
+                          )}
+
+                          {!searchQuery.trim() && searchResults.length === 0 && (
+                            <div className="search-hint-box">
+                              <p>💡 Nhập từ khóa và nhấn Enter hoặc nút 🔍 để tìm video</p>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -972,6 +1158,17 @@ function ParentMode({ inHeader = false }) {
                                       );
                                     })}
                                   </div>
+
+                                  {/* Load More Button - show when we have results */}
+                                  {searchResults.length >= 5 && (
+                                    <button
+                                      className="load-more-btn"
+                                      onClick={handleLoadMore}
+                                      disabled={isLoadingMore}
+                                    >
+                                      {isLoadingMore ? '⏳ Đang tải...' : '📥 Tìm thêm video'}
+                                    </button>
+                                  )}
 
                                   {selectedVideos.length > 0 && (
                                     <button className="submit-btn add-selected-btn" onClick={handleAddSelectedVideos}>

@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+import https from 'https';
+import http from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -375,6 +377,98 @@ app.listen(PORT, () => {
 
 // ============ YOUTUBE SEARCH API ============
 
+// Search YouTube using internal API (youtubei)
+async function searchYouTubeInternal(query, maxResults = 20) {
+  const requestBody = {
+    context: {
+      client: {
+        hl: 'vi',
+        gl: 'VN',
+        clientName: 'WEB',
+        clientVersion: '2.20240101.00.00'
+      }
+    },
+    query: query
+  };
+
+  const response = await fetch('https://www.youtube.com/youtubei/v1/search?prettyPrint=false', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  if (!response.ok) {
+    throw new Error(`YouTube API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const videos = [];
+
+  // Parse response to extract videos
+  const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+
+  for (const section of contents) {
+    const items = section?.itemSectionRenderer?.contents || [];
+    for (const item of items) {
+      if (item.videoRenderer) {
+        const v = item.videoRenderer;
+        const videoId = v.videoId;
+        if (videoId) {
+          videos.push({
+            id: uuidv4(),
+            videoId: videoId,
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            title: v.title?.runs?.[0]?.text || 'Unknown',
+            thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+            channel: v.ownerText?.runs?.[0]?.text || 'Unknown',
+            channelId: v.ownerText?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId || '',
+            publishedAt: v.publishedTimeText?.simpleText || '',
+            viewCount: v.viewCountText?.simpleText || '',
+            duration: v.lengthText?.simpleText || ''
+          });
+        }
+      }
+      // Also check for shelf with videos
+      if (item.shelfRenderer) {
+        const shelfItems = item.shelfRenderer?.content?.verticalListRenderer?.items ||
+                          item.shelfRenderer?.content?.horizontalListRenderer?.items || [];
+        for (const shelfItem of shelfItems) {
+          if (shelfItem.videoRenderer) {
+            const v = shelfItem.videoRenderer;
+            const videoId = v.videoId;
+            if (videoId) {
+              videos.push({
+                id: uuidv4(),
+                videoId: videoId,
+                url: `https://www.youtube.com/watch?v=${videoId}`,
+                title: v.title?.runs?.[0]?.text || 'Unknown',
+                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                channel: v.ownerText?.runs?.[0]?.text || 'Unknown',
+                channelId: v.ownerText?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId || '',
+                publishedAt: v.publishedTimeText?.simpleText || '',
+                viewCount: v.viewCountText?.simpleText || '',
+                duration: v.lengthText?.simpleText || ''
+              });
+            }
+          }
+        }
+      }
+
+      if (videos.length >= maxResults) break;
+    }
+    if (videos.length >= maxResults) break;
+  }
+
+  return {
+    videos: videos.slice(0, maxResults),
+    totalResults: parseInt(data?.estimatedResults || videos.length),
+    source: 'youtube-internal'
+  };
+}
+
 // Search YouTube videos
 app.get('/api/youtube/search', async (req, res) => {
   const { q, pageToken, maxResults = 20 } = req.query;
@@ -394,47 +488,8 @@ app.get('/api/youtube/search', async (req, res) => {
   }
 
   try {
-    // Add "for kids" to make search safer
-    const safeQuery = `${q} for kids`;
-    const params = new URLSearchParams({
-      part: 'snippet',
-      q: safeQuery,
-      type: 'video',
-      maxResults: maxResults.toString(),
-      safeSearch: 'strict',
-      videoEmbeddable: 'true',
-      key: YOUTUBE_API_KEY
-    });
-
-    if (pageToken) {
-      params.append('pageToken', pageToken);
-    }
-
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
-
-    if (!response.ok) {
-      // If API fails, try with oEmbed fallback
-      return res.json(await searchWithOEmbed(q, maxResults));
-    }
-
-    const data = await response.json();
-
-    const result = {
-      videos: data.items.map(item => ({
-        id: uuidv4(),
-        videoId: item.id.videoId,
-        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        title: item.snippet.title,
-        thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
-        channel: item.snippet.channelTitle,
-        channelId: item.snippet.channelId,
-        publishedAt: item.snippet.publishedAt,
-        description: item.snippet.description
-      })),
-      nextPageToken: data.nextPageToken,
-      prevPageToken: data.prevPageToken,
-      totalResults: data.pageInfo?.totalResults || 0
-    };
+    // Search using YouTube internal API
+    const result = await searchYouTubeInternal(q, parseInt(maxResults));
 
     // Cache the result
     cache[cacheKey] = { data: result, timestamp: Date.now() };
@@ -442,8 +497,8 @@ app.get('/api/youtube/search', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('YouTube API error:', error);
-    // Fallback to oEmbed search
+    console.error('YouTube Internal API error:', error);
+    // Fallback to local search
     res.json(await searchWithOEmbed(q, maxResults));
   }
 });

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useVideoStore, extractYouTubeId } from '../store/videoStore';
 import './VideoPlayer.css';
 
@@ -17,6 +18,36 @@ function VideoPlayer() {
   const iframeRef = useRef(null);
 
   const isFavorite = currentVideo && favorites.includes(currentVideo.id);
+
+  // Get filtered videos for navigation
+  const filteredVideos = useMemo(() => {
+    return getFilteredVideos?.() || [];
+  }, [getFilteredVideos]);
+
+  // Get current video index and navigation info
+  const currentIndex = useMemo(() => {
+    if (!currentVideo) return -1;
+    return filteredVideos.findIndex(v => v.id === currentVideo.id);
+  }, [currentVideo, filteredVideos]);
+
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < filteredVideos.length - 1 && currentIndex !== -1;
+
+  // Navigate to previous video
+  const handlePreviousVideo = useCallback(() => {
+    if (hasPrevious) {
+      const prevVideo = filteredVideos[currentIndex - 1];
+      setCurrentVideo(prevVideo);
+    }
+  }, [hasPrevious, filteredVideos, currentIndex, setCurrentVideo]);
+
+  // Navigate to next video
+  const handleNextVideo = useCallback(() => {
+    if (hasNext) {
+      const nextVideo = filteredVideos[currentIndex + 1];
+      setCurrentVideo(nextVideo);
+    }
+  }, [hasNext, filteredVideos, currentIndex, setCurrentVideo]);
 
   // Listen for YouTube player messages to detect errors
   useEffect(() => {
@@ -285,8 +316,33 @@ function VideoPlayer() {
           </div>
 
           <div className="video-info">
-            <span className="channel-name">📺 {currentVideo.channel}</span>
-            <span className="age-badge">{currentVideo.ageGroup === 'all' ? '🌟 Mọi lứa tuổi' : `👶 ${currentVideo.ageGroup} tuổi`}</span>
+            <div className="video-nav-controls">
+              <button
+                className={`nav-btn prev-btn ${!hasPrevious ? 'disabled' : ''}`}
+                onClick={handlePreviousVideo}
+                disabled={!hasPrevious}
+                title="Video trước"
+              >
+                <FaChevronLeft />
+                <span className="nav-text">Trước</span>
+              </button>
+              <span className="video-position">
+                {currentIndex + 1} / {filteredVideos.length}
+              </span>
+              <button
+                className={`nav-btn next-btn ${!hasNext ? 'disabled' : ''}`}
+                onClick={handleNextVideo}
+                disabled={!hasNext}
+                title="Video sau"
+              >
+                <span className="nav-text">Sau</span>
+                <FaChevronRight />
+              </button>
+            </div>
+            <div className="video-meta">
+              <span className="channel-name">📺 {currentVideo.channel}</span>
+              <span className="age-badge">{currentVideo.ageGroup === 'all' ? '🌟 Mọi lứa tuổi' : `👶 ${currentVideo.ageGroup} tuổi`}</span>
+            </div>
           </div>
         </motion.div>
       </motion.div>

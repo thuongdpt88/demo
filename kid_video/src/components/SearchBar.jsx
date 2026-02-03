@@ -102,9 +102,15 @@ function SearchBar() {
           {youtubeSearchLoading ? (
             <span className="search-spinner">⏳</span>
           ) : parentMode ? (
-            <FaYoutube />
+            <>
+              <FaYoutube />
+              <span className="btn-text">Tìm</span>
+            </>
           ) : (
-            <FaSearch />
+            <>
+              <FaSearch />
+              <span className="btn-text">Tìm</span>
+            </>
           )}
         </motion.button>
       </div>

@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"node youtube-api.mjs\" \"vite\"",
+    "dev:vite": "vite",
+    "dev:api": "node youtube-api.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -1,19 +1,35 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useVideoStore, categories } from '../store/videoStore';
 import './CategoryFilter.css';
 
 function CategoryFilter() {
-  const { selectedCategory, setCategory } = useVideoStore();
+  const { selectedCategory, setCategory, currentUser } = useVideoStore();
 
-  const allCategories = [
-    { id: 'all', name: 'Tất cả', icon: '🌟', color: '#84fab0' },
-    ...categories
-  ];
+  // Filter categories based on parent config (user's allowed categories)
+  const allowedCategories = useMemo(() => {
+    const userAllowedCategories = currentUser?.allowedCategories || [];
+
+    // If no restrictions (empty array), show all categories
+    if (userAllowedCategories.length === 0) {
+      return [
+        { id: 'all', name: 'Tất cả', icon: '🌟', color: '#84fab0' },
+        ...categories
+      ];
+    }
+
+    // Filter to only show allowed categories
+    const filtered = categories.filter(cat => userAllowedCategories.includes(cat.id));
+    return [
+      { id: 'all', name: 'Tất cả', icon: '🌟', color: '#84fab0' },
+      ...filtered
+    ];
+  }, [currentUser?.allowedCategories]);
 
   return (
     <div className="category-filter">
       <div className="category-scroll">
-        {allCategories.map((cat, index) => (
+        {allowedCategories.map((cat, index) => (
           <motion.button
             key={cat.id}
             className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}

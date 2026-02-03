@@ -8,11 +8,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Generate sourcemaps for debugging
     sourcemap: false,
-    // Use esbuild for minification (default, no extra deps needed)
     minify: 'esbuild',
-    // Chunk size optimization
     rollupOptions: {
       output: {
         manualChunks: {
@@ -23,8 +20,16 @@ export default defineConfig({
       }
     }
   },
-  // Optimize deps
   optimizeDeps: {
     include: ['react', 'react-dom', 'framer-motion', 'zustand']
+  },
+  // Proxy YouTube API requests to local server
+  server: {
+    proxy: {
+      '/api/youtube-search': {
+        target: 'http://localhost:3002',
+        changeOrigin: true
+      }
+    }
   }
 })

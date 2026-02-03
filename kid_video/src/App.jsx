@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { FaUserShield, FaSignOutAlt } from 'react-icons/fa';
 import SearchBar from './components/SearchBar';
 import SearchResults from './components/SearchResults';
-import AgeFilter from './components/AgeFilter';
 import CategoryFilter from './components/CategoryFilter';
 import VideoGrid from './components/VideoGrid';
 import VideoPlayer from './components/VideoPlayer';
@@ -103,7 +102,6 @@ function App() {
         >
           <SearchBar />
           <CategoryFilter />
-          <AgeFilter />
         </motion.div>
 
         <SearchResults />
