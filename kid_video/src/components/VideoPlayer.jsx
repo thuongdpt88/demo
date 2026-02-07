@@ -8,8 +8,9 @@ import './VideoPlayer.css';
 const VIDEO_LOAD_TIMEOUT = 15000; // 15 seconds - give more time
 
 function VideoPlayer() {
-  const { currentVideo, setCurrentVideo, favorites, toggleFavorite, addToHistory, addWatchTime, markVideoUnavailable, getFilteredVideos } = useVideoStore();
+  const { currentVideo, setCurrentVideo, favorites, toggleFavorite, addToHistory, addWatchTime, markVideoUnavailable, getFilteredVideos, videos, selectedAgeGroup, selectedCategory, searchQuery, unavailableVideos } = useVideoStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -19,10 +20,10 @@ function VideoPlayer() {
 
   const isFavorite = currentVideo && favorites.includes(currentVideo.id);
 
-  // Get filtered videos for navigation
+  // Get filtered videos for navigation - depend on actual filter state
   const filteredVideos = useMemo(() => {
     return getFilteredVideos?.() || [];
-  }, [getFilteredVideos]);
+  }, [getFilteredVideos, videos, selectedAgeGroup, selectedCategory, searchQuery, unavailableVideos]);
 
   // Get current video index and navigation info
   const currentIndex = useMemo(() => {
@@ -141,6 +142,12 @@ function VideoPlayer() {
   }, [currentVideo]);
 
   const handleClose = useCallback(() => {
+    // Exit browser fullscreen if active
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    // Unlock orientation if locked
+    try { screen.orientation?.unlock?.(); } catch (e) {}
     // Clear timeout when closing
     if (loadTimeoutRef.current) {
       clearTimeout(loadTimeoutRef.current);
@@ -152,6 +159,51 @@ function VideoPlayer() {
     setRetryCount(0);
     iframeLoadedRef.current = false;
   }, [setCurrentVideo]);
+
+  // Toggle fullscreen with landscape rotation support
+  const handleToggleFullscreen = useCallback(async () => {
+    if (!isFullscreen) {
+      // Enter fullscreen
+      try {
+        const el = containerRef.current || document.documentElement;
+        if (el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          await el.webkitRequestFullscreen();
+        }
+        // Lock to landscape on mobile
+        try { await screen.orientation?.lock?.('landscape'); } catch (e) {}
+      } catch (e) {
+        console.log('Fullscreen not supported:', e);
+      }
+      setIsFullscreen(true);
+    } else {
+      // Exit fullscreen
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        }
+        try { screen.orientation?.unlock?.(); } catch (e) {}
+      } catch (e) {}
+      setIsFullscreen(false);
+    }
+  }, [isFullscreen]);
+
+  // Sync fullscreen state with browser events
+  useEffect(() => {
+    const handleFSChange = () => {
+      if (!document.fullscreenElement) {
+        setIsFullscreen(false);
+        try { screen.orientation?.unlock?.(); } catch (e) {}
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFSChange);
+    document.addEventListener('webkitfullscreenchange', handleFSChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFSChange);
+      document.removeEventListener('webkitfullscreenchange', handleFSChange);
+    };
+  }, []);
 
   const handleIframeLoad = useCallback(() => {
     console.log('Iframe loaded for video:', currentVideo?.id);
@@ -225,6 +277,7 @@ function VideoPlayer() {
     <AnimatePresence>
       <motion.div
         className={`video-player-overlay ${isFullscreen ? 'fullscreen' : ''}`}
+        ref={containerRef}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -247,8 +300,8 @@ function VideoPlayer() {
               </button>
               <button
                 className="control-btn expand-btn"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                title={isFullscreen ? "Thu nhỏ" : "Phóng to"}
+                onClick={handleToggleFullscreen}
+                title={isFullscreen ? "Thu nhỏ" : "Phóng to (xoay ngang)"}
               >
                 {isFullscreen ? '⛶' : '⛶'}
               </button>

@@ -17,6 +17,30 @@
   padding: 0;
 }
 
+/* Fullscreen: fill entire screen */
+.video-player-overlay.fullscreen .video-player-container {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.video-player-overlay.fullscreen .video-wrapper {
+  flex: 1;
+  aspect-ratio: unset;
+  height: auto;
+}
+
+.video-player-overlay.fullscreen .video-player-header {
+  flex-shrink: 0;
+}
+
+.video-player-overlay.fullscreen .video-info {
+  flex-shrink: 0;
+}
+
 .video-player-container {
   background: linear-gradient(180deg, #1A3A32 0%, #0D1F1A 100%);
   border-radius: 28px;
@@ -27,12 +51,6 @@
     0 25px 80px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.fullscreen .video-player-container {
-  max-width: 100%;
-  height: 100%;
-  border-radius: 0;
 }
 
 .video-player-header {
@@ -335,11 +353,6 @@
   transform: translateY(-2px);
 }
 
-.fullscreen .video-wrapper {
-  height: calc(100% - 130px);
-  aspect-ratio: unset;
-}
-
 .video-info {
   display: flex;
   flex-direction: column;
@@ -510,5 +523,53 @@
     width: 38px;
     height: 38px;
     border-radius: 12px;
+  }
+}
+
+/* Landscape orientation in fullscreen - optimize for horizontal viewing */
+@media (orientation: landscape) and (max-height: 500px) {
+  .video-player-overlay.fullscreen .video-player-header {
+    padding: 6px 14px;
+  }
+
+  .video-player-overlay.fullscreen .video-title {
+    font-size: 0.85rem;
+  }
+
+  .video-player-overlay.fullscreen .control-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  .video-player-overlay.fullscreen .video-info {
+    padding: 4px 14px;
+    gap: 4px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .video-player-overlay.fullscreen .video-nav-controls {
+    gap: 8px;
+  }
+
+  .video-player-overlay.fullscreen .nav-btn {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+  }
+
+  .video-player-overlay.fullscreen .video-meta {
+    gap: 8px;
+  }
+
+  .video-player-overlay.fullscreen .video-info .channel-name {
+    font-size: 0.8rem;
+  }
+
+  .video-player-overlay.fullscreen .video-info .age-badge {
+    padding: 3px 10px;
+    font-size: 0.7rem;
   }
 }

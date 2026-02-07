@@ -11,127 +11,42 @@ echo "🚀 Starting Render Server..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Build kid_video if dist folder doesn't exist
-if [ ! -d "kid_video/dist" ]; then
-  echo "⚠️  kid_video/dist not found. Building..."
-  cd kid_video
-  npm install
-  npm run build
-  cd ..
-fi
+MAIN_PORT="${PORT:-8000}"
+
+# Kill any existing process on the port
+kill_port() {
+  local PID
+  PID=$(lsof -ti :"$MAIN_PORT" 2>/dev/null)
+  if [ -n "$PID" ]; then
+    echo "⚠️  Port $MAIN_PORT is in use (PID: $PID). Killing..."
+    kill -9 $PID 2>/dev/null
+    sleep 1
+    echo "✅ Old process killed."
+  fi
+}
+
+# Cleanup on exit (Ctrl+C or script termination)
+cleanup() {
+  echo ""
+  echo "🛑 Stopping server..."
+  kill_port
+  echo "👋 Server stopped."
+  exit 0
+}
+trap cleanup SIGINT SIGTERM EXIT
+
+# Kill old process if port is still occupied
+kill_port
+
+echo "🔄 Preparing kid_video app..."
+cd kid_video
+./start_server_kid_video.sh
+cd ..
 
 # Start main server with integrated YouTube API proxy
-MAIN_PORT="${PORT:-8000}"
 echo "🌐 Starting server on port $MAIN_PORT..."
 echo "📌 Open http://localhost:$MAIN_PORT in your browser"
 echo "📌 Kid Video: http://localhost:$MAIN_PORT/kid_video/dist/"
 
-# Use Python to serve static files AND proxy YouTube API
-python3 -c "
-import http.server
-import socketserver
-import os
-import json
-import urllib.request
-import urllib.error
-
-PORT = int(os.environ.get('PORT', 8000))
-
-class ProxyHandler(http.server.SimpleHTTPRequestHandler):
-    def do_POST(self):
-        if self.path == '/api/youtube-search':
-            self.proxy_youtube_search()
-        else:
-            self.send_error(404, 'Not Found')
-
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
-
-    def proxy_youtube_search(self):
-        try:
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-            body = json.loads(post_data.decode('utf-8'))
-            query = body.get('query', '')
-
-            print(f'🔍 Searching YouTube: {query}')
-
-            # Call YouTube API directly
-            request_body = json.dumps({
-                'context': {
-                    'client': {
-                        'hl': 'vi',
-                        'gl': 'VN',
-                        'clientName': 'WEB',
-                        'clientVersion': '2.20240101.00.00'
-                    }
-                },
-                'query': query
-            }).encode('utf-8')
-
-            req = urllib.request.Request(
-                'https://www.youtube.com/youtubei/v1/search?prettyPrint=false',
-                data=request_body,
-                headers={
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            )
-
-            with urllib.request.urlopen(req, timeout=10) as response:
-                yt_data = json.loads(response.read().decode('utf-8'))
-
-            # Parse YouTube response
-            videos = []
-            try:
-                contents = yt_data.get('contents', {}).get('twoColumnSearchResultsRenderer', {}).get('primaryContents', {}).get('sectionListRenderer', {}).get('contents', [])
-                for section in contents:
-                    items = section.get('itemSectionRenderer', {}).get('contents', [])
-                    for item in items:
-                        video = item.get('videoRenderer')
-                        if video:
-                            video_id = video.get('videoId')
-                            title = video.get('title', {}).get('runs', [{}])[0].get('text', '')
-                            thumbnail = video.get('thumbnail', {}).get('thumbnails', [{}])[-1].get('url', '')
-                            channel = video.get('ownerText', {}).get('runs', [{}])[0].get('text', '')
-                            if video_id and title:
-                                videos.append({
-                                    'id': video_id,
-                                    'videoId': video_id,
-                                    'url': f'https://www.youtube.com/watch?v={video_id}',
-                                    'title': title,
-                                    'thumbnail': f'https://img.youtube.com/vi/{video_id}/mqdefault.jpg',
-                                    'channel': channel
-                                })
-                                if len(videos) >= 20:
-                                    break
-                    if len(videos) >= 20:
-                        break
-            except Exception as e:
-                print(f'Parse error: {e}')
-
-            result = json.dumps({'videos': videos, 'totalResults': len(videos)})
-
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(result.encode('utf-8'))
-            print(f'✅ Found {len(videos)} videos')
-
-        except Exception as e:
-            print(f'❌ YouTube API error: {e}')
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({'error': str(e), 'videos': []}).encode('utf-8'))
-
-with socketserver.TCPServer(('0.0.0.0', PORT), ProxyHandler) as httpd:
-    print(f'Serving at http://0.0.0.0:{PORT}')
-    httpd.serve_forever()
-"
+echo "🔌 Starting YouTube API proxy..."
+python3 kid_video/proxy_youtube_api.py

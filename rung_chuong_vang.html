@@ -28,7 +28,7 @@
         }
         .btn-3d { transition: all 0.1s; border-bottom-width: 5px; position: relative; }
         .btn-3d:active { transform: translateY(4px); border-bottom-width: 1px; }
-        
+
         .avatar-option { transition: transform 0.2s; }
         .avatar-option:hover { transform: scale(1.15); }
         .avatar-selected { border: 4px solid #FBBF24; border-radius: 50%; background-color: #FFFBEB; transform: scale(1.2); }
@@ -37,7 +37,7 @@
         .correct-anim { background-color: #86efac !important; border-color: #22c55e !important; transform: scale(1.02); }
         .wrong-anim { background-color: #fca5a5 !important; border-color: #ef4444 !important; animation: shake 0.5s; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
-        
+
         .perspective { perspective: 1000px; }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
         .card.flipped .card-inner { transform: rotateY(180deg); }
@@ -56,7 +56,7 @@
     </div>
 
     <div id="app" class="w-full max-w-lg relative z-0 mt-12 h-full max-h-[850px] flex flex-col pb-safe">
-        
+
         <!-- 1. LOGIN -->
         <div id="screen-user" class="glass-panel p-5 flex flex-col h-full overflow-hidden">
             <h2 class="text-xl font-bold text-blue-600 text-center mb-2">Ai đang chơi đấy nhỉ?</h2>
@@ -134,7 +134,7 @@
                 </div>
                 <div class="w-9 h-9 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 font-bold text-sm"><span id="memory-moves">0</span></div>
             </div>
-            
+
             <!-- Memory Timer Bar -->
             <div class="w-full bg-gray-200 rounded-full h-2 mb-3 overflow-hidden">
                 <div id="memory-timer-bar" class="bg-teal-500 h-2 rounded-full transition-all duration-1000 ease-linear w-full"></div>
@@ -234,7 +234,7 @@
             const arr=[];
             for(let i=0;i<count;i++){
                 const type = Math.random();
-                if(type<0.3){ 
+                if(type<0.3){
                     const a=Math.floor(Math.random()*10), b=Math.floor(Math.random()*10);
                     arr.push({q:`${a} + ${b} = ?`, a:[`${a+b}`,`${a+b+1}`,`${Math.abs(a+b-1)}`,`${a+b+2}`].sort(()=>0.5-Math.random()), c:0, correctVal:`${a+b}`, icon:'➕'});
                 } else if(type<0.6){
@@ -303,12 +303,184 @@
             ]
         };
 
+        // === DYNAMIC WORD BANK FOR ENGLISH VOCAB ===
+        const enVocabBank = [
+            {e:'Elephant',v:'Con voi',i:'🐘',w:['Con hổ','Con khỉ','Con chó']},
+            {e:'Rabbit',v:'Con thỏ',i:'🐰',w:['Con mèo','Con gà','Con rắn']},
+            {e:'Horse',v:'Con ngựa',i:'🐴',w:['Con bò','Con dê','Con lừa']},
+            {e:'Frog',v:'Con ếch',i:'🐸',w:['Con rắn','Con cá','Con tôm']},
+            {e:'Bear',v:'Con gấu',i:'🐻',w:['Con sói','Con hổ','Con báo']},
+            {e:'Duck',v:'Con vịt',i:'🦆',w:['Con gà','Con ngỗng','Con chim']},
+            {e:'Cow',v:'Con bò',i:'🐄',w:['Con trâu','Con dê','Con lợn']},
+            {e:'Sheep',v:'Con cừu',i:'🐑',w:['Con dê','Con bò','Con heo']},
+            {e:'Snake',v:'Con rắn',i:'🐍',w:['Con giun','Con ếch','Con thằn lằn']},
+            {e:'Butterfly',v:'Con bướm',i:'🦋',w:['Con ong','Con kiến','Con chuồn chuồn']},
+            {e:'Turtle',v:'Con rùa',i:'🐢',w:['Con ốc','Con cua','Con ếch']},
+            {e:'Dolphin',v:'Cá heo',i:'🐬',w:['Cá mập','Cá voi','Cá chép']},
+            {e:'Ant',v:'Con kiến',i:'🐜',w:['Con ong','Con bọ','Con ruồi']},
+            {e:'Bee',v:'Con ong',i:'🐝',w:['Con kiến','Con bướm','Con muỗi']},
+            {e:'Banana',v:'Quả chuối',i:'🍌',w:['Quả táo','Quả cam','Quả xoài']},
+            {e:'Orange',v:'Quả cam',i:'🍊',w:['Quả táo','Quả lê','Quả ổi']},
+            {e:'Grape',v:'Quả nho',i:'🍇',w:['Quả mận','Quả vải','Quả đào']},
+            {e:'Watermelon',v:'Dưa hấu',i:'🍉',w:['Dưa lưới','Quả bí','Quả dừa']},
+            {e:'Strawberry',v:'Dâu tây',i:'🍓',w:['Quả mâm xôi','Quả cherry','Quả nho']},
+            {e:'Mango',v:'Quả xoài',i:'🥭',w:['Quả ổi','Quả đào','Quả lê']},
+            {e:'Water',v:'Nước',i:'💧',w:['Sữa','Nước ép','Trà']},
+            {e:'Bread',v:'Bánh mì',i:'🍞',w:['Cơm','Phở','Bún']},
+            {e:'Rice',v:'Gạo/Cơm',i:'🍚',w:['Bún','Mì','Phở']},
+            {e:'Egg',v:'Quả trứng',i:'🥚',w:['Quả bóng','Quả cam','Viên kẹo']},
+            {e:'Happy',v:'Vui vẻ',i:'😊',w:['Buồn','Giận','Sợ']},
+            {e:'Sad',v:'Buồn',i:'😢',w:['Vui','Giận','Sợ hãi']},
+            {e:'Big',v:'To lớn',i:'🔵',w:['Nhỏ bé','Dài','Ngắn']},
+            {e:'Small',v:'Nhỏ bé',i:'🔹',w:['To lớn','Dài','Cao']},
+            {e:'Hot',v:'Nóng',i:'🔥',w:['Lạnh','Ấm','Mát']},
+            {e:'Cold',v:'Lạnh',i:'❄️',w:['Nóng','Ấm','Mát']},
+            {e:'Rain',v:'Mưa',i:'🌧️',w:['Nắng','Gió','Tuyết']},
+            {e:'Wind',v:'Gió',i:'💨',w:['Mưa','Nắng','Mây']},
+            {e:'Table',v:'Cái bàn',i:'🪑',w:['Cái ghế','Cái giường','Cái tủ']},
+            {e:'Door',v:'Cái cửa',i:'🚪',w:['Cái bàn','Bức tường','Sàn nhà']},
+            {e:'Shirt',v:'Áo sơ mi',i:'👕',w:['Quần','Giày','Mũ']},
+            {e:'Shoes',v:'Đôi giày',i:'👟',w:['Dép','Mũ','Áo']},
+            {e:'Hat',v:'Cái mũ',i:'🧢',w:['Giày','Áo','Kính']},
+            {e:'Cake',v:'Bánh kem',i:'🎂',w:['Kẹo','Kem','Bánh mì']},
+            {e:'Ice cream',v:'Kem',i:'🍦',w:['Bánh','Sữa','Kẹo']},
+            {e:'Pizza',v:'Bánh pizza',i:'🍕',w:['Hamburger','Hotdog','Sandwich']},
+            {e:'Family',v:'Gia đình',i:'👨‍👩‍👧‍👦',w:['Bạn bè','Trường học','Công viên']},
+            {e:'Friend',v:'Bạn bè',i:'🤝',w:['Gia đình','Người lạ','Hàng xóm']},
+            {e:'House',v:'Ngôi nhà',i:'🏠',w:['Trường học','Bệnh viện','Cửa hàng']},
+            {e:'Garden',v:'Khu vườn',i:'🌻',w:['Phòng ngủ','Nhà bếp','Phòng khách']},
+            {e:'Clock',v:'Đồng hồ',i:'🕐',w:['Lịch','Bút','Thước']},
+            {e:'Phone',v:'Điện thoại',i:'📱',w:['Máy tính','Ti vi','Đài radio']},
+            {e:'Pencil',v:'Bút chì',i:'✏️',w:['Bút mực','Thước kẻ','Tẩy']},
+            {e:'Kitchen',v:'Nhà bếp',i:'🍳',w:['Phòng ngủ','Phòng khách','Nhà tắm']},
+            {e:'Bedroom',v:'Phòng ngủ',i:'🛏️',w:['Nhà bếp','Phòng khách','Nhà vệ sinh']},
+            {e:'Tooth',v:'Răng',i:'🦷',w:['Lưỡi','Môi','Mũi']},
+            {e:'Ear',v:'Tai',i:'👂',w:['Mắt','Mũi','Miệng']},
+            {e:'Leg',v:'Chân',i:'🦵',w:['Tay','Đầu','Bụng']},
+            {e:'Hair',v:'Tóc',i:'💇',w:['Mắt','Tai','Mũi']},
+            {e:'Brother',v:'Anh/Em trai',i:'👦',w:['Chị gái','Bố','Mẹ']},
+            {e:'Sister',v:'Chị/Em gái',i:'👧',w:['Anh trai','Bố','Ông']},
+            {e:'Baby',v:'Em bé',i:'👶',w:['Người lớn','Ông bà','Cô chú']},
+            {e:'Sing',v:'Hát',i:'🎤',w:['Nhảy','Vẽ','Đọc']},
+            {e:'Dance',v:'Nhảy múa',i:'💃',w:['Hát','Chạy','Ngồi']},
+            {e:'Sleep',v:'Ngủ',i:'😴',w:['Ăn','Chơi','Học']},
+            {e:'Eat',v:'Ăn',i:'🍽️',w:['Uống','Ngủ','Chạy']},
+            {e:'Run',v:'Chạy',i:'🏃',w:['Đi bộ','Ngồi','Đứng']},
+        ];
+        function genTiengAnhFromBank(count) {
+            const shuffled = [...enVocabBank].sort(() => 0.5 - Math.random()).slice(0, count);
+            return shuffled.map(w => {
+                if(Math.random() > 0.5) {
+                    return { q:`"${w.e}" nghĩa là gì?`, a:[w.v,...w.w], c:0, icon:w.i };
+                } else {
+                    const wrongEn = enVocabBank.filter(x=>x.e!==w.e).sort(()=>0.5-Math.random()).slice(0,3).map(x=>x.e);
+                    return { q:`"${w.v}" tiếng Anh là?`, a:[w.e,...wrongEn], c:0, icon:w.i };
+                }
+            });
+        }
+
+        // === EXTRA STATIC QUESTIONS ===
+        const extraTiengViet = [
+            {q:"Con gì có 8 chân?",a:["Bạch tuộc","Chó","Mèo","Gà"],c:0,icon:"🐙"},
+            {q:"Cái gì dùng để cắt giấy?",a:["Kéo","Dao","Búa","Thước"],c:0,icon:"✂️"},
+            {q:"Mùa nào hoa nở nhiều?",a:["Xuân","Đông","Thu","Hè"],c:0,icon:"🌸"},
+            {q:"Quốc kỳ Việt Nam có ngôi sao gì?",a:["Sao vàng","Sao bạc","Sao đỏ","Sao xanh"],c:0,icon:"🇻🇳"},
+            {q:"Con gì có mai cứng?",a:["Rùa","Thỏ","Chuột","Mèo"],c:0,icon:"🐢"},
+            {q:"'Có công mài sắt có ngày nên...'",a:["kim","vàng","bạc","dao"],c:0},
+            {q:"Con gì ngủ đông?",a:["Gấu","Gà","Chó","Mèo"],c:0,icon:"🐻"},
+            {q:"Cái gì dùng để xem giờ?",a:["Đồng hồ","Kính","Lược","Bút"],c:0,icon:"⏰"},
+            {q:"'Gần mực thì...'",a:["đen","sáng","tối","trắng"],c:0},
+            {q:"'Gần đèn thì...'",a:["sáng","đen","tối","mờ"],c:0},
+            {q:"Con gì kêu 'Be be'?",a:["Dê","Bò","Trâu","Ngựa"],c:0,icon:"🐐"},
+            {q:"Từ đồng nghĩa với 'xinh'?",a:["Đẹp","Xấu","To","Nhỏ"],c:0},
+            {q:"Từ trái nghĩa với 'nhanh'?",a:["Chậm","Dài","Ngắn","Mới"],c:0},
+            {q:"Từ trái nghĩa với 'to'?",a:["Nhỏ","Dài","Cao","Nặng"],c:0},
+            {q:"Con gì kêu 'Ụm bò'?",a:["Ếch","Chim","Gà","Vịt"],c:0,icon:"🐸"},
+            {q:"Quả gì có gai?",a:["Sầu riêng","Xoài","Chuối","Cam"],c:0,icon:"🌰"},
+            {q:"Bốn mùa: Xuân, Hạ, Thu và?",a:["Đông","Mưa","Nắng","Gió"],c:0},
+            {q:"Thủ đô Việt Nam là?",a:["Hà Nội","Hồ Chí Minh","Đà Nẵng","Huế"],c:0,icon:"🏛️"},
+            {q:"Bé đi học ở đâu?",a:["Trường","Chợ","Bệnh viện","Công viên"],c:0,icon:"🏫"},
+            {q:"Cái gì dùng để xóa bút chì?",a:["Tẩy","Thước","Kéo","Bút"],c:0},
+            {q:"'Đi một ngày đàng, học một...'",a:["sàng khôn","bài học","cuốn sách","câu thơ"],c:0},
+            {q:"Tết Nguyên Đán là tết gì?",a:["Tết cổ truyền","Tết Trung Thu","Tết Tây","Tết Hàn Thực"],c:0,icon:"🧧"},
+            {q:"Con gì có sừng?",a:["Trâu","Mèo","Gà","Cá"],c:0,icon:"🐃"},
+            {q:"Bàn tay có mấy ngón?",a:["5","4","6","3"],c:0,icon:"🖐️"},
+            {q:"Cơ thể có mấy mắt?",a:["2","1","3","4"],c:0,icon:"👀"},
+        ];
+
+        const extraTuNhien = [
+            {q:"Hành tinh nào gần Mặt Trời nhất?",a:["Sao Thủy","Sao Kim","Trái Đất","Sao Hỏa"],c:0,icon:"☀️"},
+            {q:"Động vật nào lớn nhất thế giới?",a:["Cá voi xanh","Voi","Hươu cao cổ","Cá mập"],c:0,icon:"🐋"},
+            {q:"Con gì chạy nhanh nhất?",a:["Báo gê-pa","Sư tử","Ngựa","Thỏ"],c:0,icon:"🐆"},
+            {q:"Nước đá tan thành gì?",a:["Nước","Hơi","Khói","Không khí"],c:0,icon:"🧊"},
+            {q:"Cây lúa cho hạt gì?",a:["Gạo","Ngô","Đậu","Lạc"],c:0,icon:"🌾"},
+            {q:"Con sâu lớn lên thành?",a:["Bướm","Ong","Kiến","Ruồi"],c:0,icon:"🐛"},
+            {q:"Trái Đất hình gì?",a:["Hình cầu","Hình vuông","Hình tam giác","Hình trụ"],c:0,icon:"🌍"},
+            {q:"Động vật nào có túi?",a:["Kanguru","Gấu","Sư tử","Voi"],c:0,icon:"🦘"},
+            {q:"Mặt trời lặn hướng nào?",a:["Tây","Đông","Bắc","Nam"],c:0,icon:"🌅"},
+            {q:"Sông nào dài nhất Việt Nam?",a:["Sông Mê Kông","Sông Hồng","Sông Đà","Sông Hương"],c:0,icon:"🏞️"},
+            {q:"Cây nào cho quả dừa?",a:["Cây dừa","Cây cam","Cây xoài","Cây bưởi"],c:0,icon:"🥥"},
+            {q:"Con gì sống ở Bắc Cực?",a:["Gấu Bắc Cực","Sư tử","Voi","Khỉ"],c:0,icon:"🐻‍❄️"},
+            {q:"Con gì có túi mực?",a:["Mực","Cá","Tôm","Cua"],c:0,icon:"🦑"},
+            {q:"Gỗ lấy từ đâu?",a:["Cây","Đá","Đất","Nước"],c:0,icon:"🪵"},
+            {q:"Muối lấy từ đâu?",a:["Biển","Sông","Suối","Hồ"],c:0,icon:"🧂"},
+            {q:"Con gì có 6 chân?",a:["Côn trùng","Chó","Mèo","Cá"],c:0,icon:"🐜"},
+            {q:"Mùa thu lá cây thường?",a:["Rụng","Mọc","Xanh tốt","Nở hoa"],c:0,icon:"🍂"},
+            {q:"Chim cánh cụt sống ở đâu?",a:["Nam Cực","Rừng","Sa mạc","Biển nhiệt đới"],c:0,icon:"🐧"},
+            {q:"Nước sôi ở bao nhiêu độ C?",a:["100","50","200","0"],c:0,icon:"♨️"},
+            {q:"Núi nào cao nhất Việt Nam?",a:["Fansipan","Bà Đen","Langbiang","Bạch Mã"],c:0,icon:"🏔️"},
+        ];
+
+        const extraLogic = [
+            {q:"Số nào lớn nhất trong 15, 51, 55, 11?",a:["55","51","15","11"],c:0},
+            {q:"Con gì đầu mèo, đuôi mèo mà không phải mèo?",a:["Mèo con","Chó","Chuột","Thỏ"],c:0,icon:"🐱"},
+            {q:"2 bố con câu được 3 cá, mỗi người 1 con. Vì sao?",a:["Có ông-bố-con","Có 3 người","Nhầm lẫn","Không thể"],c:0},
+            {q:"Cái gì của mình nhưng người khác dùng nhiều hơn?",a:["Tên","Tiền","Xe","Nhà"],c:0},
+            {q:"5 quả táo chia 5 bé, sao còn 1 trong rổ?",a:["1 bé cầm cả rổ","Đếm sai","Có 6 quả","Không thể"],c:0,icon:"🍎"},
+            {q:"Đâu là số lẻ: 2, 4, 7, 8?",a:["7","2","4","8"],c:0},
+            {q:"Đâu là số chẵn: 1, 3, 6, 9?",a:["6","1","3","9"],c:0},
+            {q:"Hình tam giác có mấy cạnh?",a:["3","4","5","2"],c:0,icon:"🔺"},
+            {q:"Hình vuông có mấy góc?",a:["4","3","5","6"],c:0,icon:"🟥"},
+            {q:"Ngày có mấy giờ?",a:["24","12","30","48"],c:0,icon:"🕐"},
+            {q:"Tuần có mấy ngày?",a:["7","5","6","10"],c:0,icon:"📅"},
+            {q:"1 năm có mấy tháng?",a:["12","10","11","13"],c:0,icon:"📆"},
+            {q:"Cái gì bay không cần cánh?",a:["Thời gian","Chim","Máy bay","Bóng bay"],c:0,icon:"⏰"},
+            {q:"Nước nào nhỏ nhất?",a:["Nước mắt","Nước Nga","Nước Mỹ","Nước Pháp"],c:0,icon:"😢"},
+            {q:"Con gì càng tắm càng bẩn?",a:["Con nước","Con mèo","Con chó","Con voi"],c:0},
+            {q:"Cái gì có 4 chân mà không biết đi?",a:["Cái bàn","Con bò","Con chó","Con vịt"],c:0,icon:"🪑"},
+        ];
+
+        // === EXTRA MATH GENERATOR (multiplication & sequences) ===
+        function genExtraMath(count) {
+            const arr=[];
+            for(let i=0;i<count;i++){
+                const type = Math.random();
+                if(type<0.35){
+                    const a=Math.floor(Math.random()*5)+1, b=Math.floor(Math.random()*5)+1;
+                    const correct=a*b;
+                    arr.push({q:`${a} × ${b} = ?`,a:[`${correct}`,`${correct+2}`,`${Math.abs(correct-2)}`,`${correct+3}`],c:0,correctVal:`${correct}`,icon:'✖️'});
+                } else if(type<0.7){
+                    const start=Math.floor(Math.random()*5)+1; const step=Math.floor(Math.random()*3)+1;
+                    const seq=[start,start+step,start+step*2]; const next=start+step*3;
+                    arr.push({q:`${seq.join(', ')}, ... Số tiếp theo?`,a:[`${next}`,`${next+2}`,`${Math.abs(next-2)}`,`${next+step+2}`],c:0,correctVal:`${next}`,icon:'🔢'});
+                } else {
+                    const a=Math.floor(Math.random()*10)+10, b=Math.floor(Math.random()*10)+10;
+                    const sum=a+b;
+                    arr.push({q:`${a} + ${b} = ?`,a:[`${sum}`,`${sum+1}`,`${sum-1}`,`${sum+2}`],c:0,correctVal:`${sum}`,icon:'➕'});
+                }
+            }
+            arr.forEach(x => { x.c = x.a.indexOf(x.correctVal); });
+            return arr;
+        }
+
+        let onlineQuestions = []; // Will be populated from online API
+
         const questionBank = {
-            toan: genMath(60),
-            tiengviet: [...staticQ.tiengviet, ...staticQ.tiengviet],
-            tienganh: [...staticQ.tienganh, ...staticQ.tienganh],
-            tunhien: [...staticQ.tunhien, ...staticQ.tunhien],
-            logic: [...staticQ.logic, ...staticQ.logic]
+            toan: [...genMath(40), ...genExtraMath(30)],
+            tiengviet: [...staticQ.tiengviet, ...extraTiengViet],
+            tienganh: [...staticQ.tienganh, ...genTiengAnhFromBank(30)],
+            tunhien: [...staticQ.tunhien, ...extraTuNhien],
+            logic: [...staticQ.logic, ...extraLogic]
         };
 
         const flashcardData = {
@@ -319,11 +491,11 @@
 
         const topics = { 'toan':'Toán Học', 'tiengviet':'Tiếng Việt', 'tienganh':'Tiếng Anh', 'tunhien':'Thế Giới', 'logic':'Tư Duy', 'tonghop':'Tổng Hợp', 'memory':'Trí Nhớ' };
         const avatars = ['🐱','🦁','🐰','🐼','🦄','🤖','🦖','🐝','🦊','🐸'];
-        
+
         let users = JSON.parse(localStorage.getItem('rcv_users_v2')) || [];
         if(users.length===0){ users=[{id:Date.now(),name:"Kem",avatar:"🐱"}]; localStorage.setItem('rcv_users_v2',JSON.stringify(users)); }
         let history = JSON.parse(localStorage.getItem('rcv_history_v2')) || [];
-        
+
         let currentUser=null, selectedAvatar=avatars[0], editUserId=null, performanceChart=null, activeExitScreen=null;
         let quizState={topic:'',questions:[],currentIndex:0,score:0,timer:null,timeLeft:15,maxQuestions:15};
         let memoryState={cards:[],flipped:[],matched:[],moves:0,canFlip:true,level:'', timer: null, timeLeft: 30, totalTime: 30};
@@ -344,8 +516,20 @@
 
         // --- QUIZ LOGIC ---
         function startGame(tk){
+            // Regenerate dynamic questions each game for variety
+            questionBank.toan = [...genMath(40), ...genExtraMath(30)];
+            questionBank.tienganh = [...staticQ.tienganh, ...genTiengAnhFromBank(30), ...onlineQuestions];
             let qs = (tk==='tonghop') ? Object.values(questionBank).flat() : [...questionBank[tk]];
             qs = qs.sort(()=>0.5-Math.random()).slice(0,15);
+            // Fisher-Yates shuffle answer positions so correct answer is random
+            qs.forEach(q => {
+                const correctAns = q.a[q.c];
+                for(let i = q.a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [q.a[i], q.a[j]] = [q.a[j], q.a[i]];
+                }
+                q.c = q.a.indexOf(correctAns);
+            });
             quizState={topic:tk,questions:qs,currentIndex:0,score:0,timer:null,timeLeft:15,maxQuestions:qs.length};
             document.getElementById('game-topic-name').innerText=topics[tk]; document.getElementById('score').innerText='0';
             switchScreen('game'); loadQuestion();
@@ -376,12 +560,12 @@
             if(level==='easy') { pairCount=3; gridClass='grid-cols-3'; source=['animals','transport','mix'][Math.floor(Math.random()*3)]; time=30; }
             if(level==='medium') { pairCount=6; gridClass='grid-cols-3'; source='mix'; time=60; }
             if(level==='hard') { pairCount=10; gridClass='grid-cols-4'; source='mix'; time=120; }
-            
+
             // Get data
             let pool = [];
             if(source==='mix') pool=[...flashcardData.animals, ...flashcardData.transport, ...flashcardData.mix];
             else pool = flashcardData[source];
-            
+
             pool = pool.sort(()=>0.5-Math.random()).slice(0, pairCount);
             let cards = [];
             pool.forEach(x => { cards.push({...x}); cards.push({...x}); });
@@ -390,11 +574,11 @@
             memoryState = { cards: cards, flipped: [], matched: [], moves: 0, canFlip: true, level: level, timeLeft: time, totalTime: time, timer: null };
             document.getElementById('memory-level-display').innerText = `ĐỘ KHÓ: ${level==='easy'?'DỄ':(level==='medium'?'VỪA':'KHÓ')}`;
             document.getElementById('memory-moves').innerText = '0';
-            
+
             const grid = document.getElementById('memory-grid');
             grid.className = `grid gap-2 flex-grow content-center justify-center ${gridClass}`;
             grid.innerHTML = '';
-            
+
             cards.forEach((c,i) => {
                 const el = document.createElement('div');
                 el.className = `perspective w-full h-24 cursor-pointer card`;
@@ -403,7 +587,7 @@
                 grid.appendChild(el);
             });
             switchScreen('memory');
-            
+
             // Start Timer
             updateMemoryTimerBar();
             if(memoryState.timer) clearInterval(memoryState.timer);
@@ -459,7 +643,7 @@
             let baseScore = memoryState.level==='easy'?50 : (memoryState.level==='medium'?100 : 150);
             // Bonus points for time left (1pt per second)
             let score = baseScore + memoryState.timeLeft;
-            
+
             let displayLevel = memoryState.level==='easy'?' (Dễ)':(memoryState.level==='medium'?' (Vừa)':' (Khó)');
             saveHistory(score, "Trí Nhớ"+displayLevel, "memory");
             showResult(score, score, true);
@@ -473,7 +657,7 @@
         function showResult(score, max, isMem=false, isTimeOut=false){
             const t=document.getElementById('result-title'), i=document.getElementById('result-icon'), f=document.getElementById('result-feedback');
             document.getElementById('final-score').innerText=score;
-            
+
             if(isTimeOut) {
                 t.innerText = "Hết giờ rồi!"; t.className="text-3xl font-bold text-gray-500 mb-2";
                 i.innerText = "⏰";
@@ -481,7 +665,7 @@
             } else if(isMem){
                 sfx.win();
                 t.innerText="Trí nhớ siêu phàm!"; t.className="text-3xl font-bold text-teal-500 mb-2";
-                i.innerText="🧠✨"; 
+                i.innerText="🧠✨";
                 f.innerText=`Hoàn thành! Còn dư ${memoryState.timeLeft} giây!`;
                 confetti({particleCount:150,spread:70,origin:{y:0.6}});
             } else {
@@ -497,12 +681,12 @@
         // --- DASHBOARD ---
         function showExitModal(s='game'){ sfx.click(); activeExitScreen=s; document.getElementById('modal-exit').classList.remove('hidden'); }
         function closeExitModal(){ sfx.click(); document.getElementById('modal-exit').classList.add('hidden'); }
-        function realExitGame(){ 
-            sfx.click(); 
-            document.getElementById('modal-exit').classList.add('hidden'); 
+        function realExitGame(){
+            sfx.click();
+            document.getElementById('modal-exit').classList.add('hidden');
             if(activeExitScreen==='game') clearInterval(quizState.timer);
             if(activeExitScreen==='memory') clearInterval(memoryState.timer);
-            switchScreen('topic'); 
+            switchScreen('topic');
         }
         function backToTopics(){ switchScreen('topic'); }
         function showDashboard(){ switchScreen('dashboard'); switchTab('chart'); }
@@ -527,7 +711,7 @@
                         if(r.topicName.includes('Dễ')) max=50; if(r.topicName.includes('Khó')) max=150;
                         let normalized = (r.score / max) * 100;
                         if(normalized > 100) normalized = 100; // Cap at 100 for graph beauty
-                        total += normalized; 
+                        total += normalized;
                     });
                     return Math.round(total/rs.length);
                 }
@@ -550,11 +734,33 @@
         function renderHistory(){
             const h=history.filter(x=>x.userId===currentUser.id);
             const l=document.getElementById('history-list'); const e=document.getElementById('empty-history');
-            if(!h.length){l.innerHTML=`<tr><td class="text-center p-4 text-gray-400"><i class="fa-solid fa-ghost text-2xl mb-1 block"></i>Chưa có lịch sử</td></tr>`;} 
+            if(!h.length){l.innerHTML=`<tr><td class="text-center p-4 text-gray-400"><i class="fa-solid fa-ghost text-2xl mb-1 block"></i>Chưa có lịch sử</td></tr>`;}
             else { l.innerHTML=h.map(x=>`<tr class="border-b border-gray-100"><td class="py-3 px-1"><div class="text-[10px] text-gray-400 font-bold">${x.date}</div><div class="font-bold text-blue-600 text-xs">${x.topicName}</div></td><td class="py-3 px-1 text-right"><span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">${x.score}đ</span></td></tr>`).join(''); }
         }
 
+        // === ONLINE QUESTION FETCH (opentdb.com) ===
+        async function fetchOnlineQuestions() {
+            try {
+                const resp = await fetch('https://opentdb.com/api.php?amount=30&difficulty=easy&type=multiple');
+                const data = await resp.json();
+                if(data.response_code === 0) {
+                    const decode = s => { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; };
+                    onlineQuestions = data.results.map(r => ({
+                        q: decode(r.question),
+                        a: [decode(r.correct_answer), ...r.incorrect_answers.map(decode)],
+                        c: 0,
+                        icon: '🌐'
+                    }));
+                    questionBank.tienganh.push(...onlineQuestions);
+                    console.log('✅ Loaded', onlineQuestions.length, 'online questions from opentdb');
+                }
+            } catch(e) {
+                console.log('⚠️ Offline mode - using local questions only');
+            }
+        }
+
         init();
+        fetchOnlineQuestions(); // Async enrichment - adds questions when ready
     </script>
 </body>
 </html>

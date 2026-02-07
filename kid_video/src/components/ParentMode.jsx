@@ -40,7 +40,12 @@ const generateMathQuestion = () => {
   };
 };
 
-const avatars = ['👶', '🧒', '👦', '👧', '🧒🏻', '👦🏻', '👧🏻', '🐻', '🐰', '🦊', '🐱', '🐶'];
+const avatars = [
+  '🦁', '🐯', '🐼', '🐨', '🦊', '🐰',
+  '🐱', '🐶', '🐻', '🦄', '🐸', '🐧',
+  '🦋', '🐙', '🐳', '🦖', '🧸', '🎈',
+  '🌟', '🚀', '🎨', '🎪', '🍀', '🌈'
+];
 
 // Validate if video is available on YouTube
 const validateVideoAvailability = async (url) => {
@@ -848,7 +853,7 @@ function ParentMode({ inHeader = false }) {
                 onClick={(e) => e.stopPropagation()}
               >
                 <button className="close-modal" onClick={() => setEditingUser(null)}>
-                  <FaTimes />
+                  ✕
                 </button>
                 <div className="modal-scroll-content">
                   <h3>✏️ Chỉnh sửa: {editingUser.name}</h3>
@@ -946,7 +951,7 @@ function ParentMode({ inHeader = false }) {
                 onClick={(e) => e.stopPropagation()}
               >
                 <button className="close-modal" onClick={() => setEditingVideo(null)}>
-                  <FaTimes />
+                  ✕
                 </button>
                 <div className="modal-scroll-content">
                   <h3>✏️ Chỉnh sửa video</h3>
