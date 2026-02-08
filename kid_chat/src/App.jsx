@@ -21,7 +21,15 @@ const EMOJIS = [
   "🍕", "🍔", "🍟", "🍦", "🍩", "🍪", "🎂", "🧁", "🍫", "🍭", "🍬", "🥤",
   "👍", "👏", "🙌", "🤝", "✌️", "🤞", "👋", "💪", "🦸", "🦹", "👼", "🧚"
 ];
-const AVATARS = ["👦", "👧", "🧒", "🧑", "🧓", "👴", "👵", "🧕", "🧖", "🦸", "🦹", "👼", "🐶", "🐱", "🐹", "🦁"];
+const AVATARS = [
+  "👦", "👧", "🧒", "🧑", "👨", "👩", "🧓", "👴", "👵",
+  "👶", "🧒", "👱", "👸", "🤴", "🧕", "🧖", "🦸", "🦹", "👼", "🧚",
+  "🧜", "🧝", "🧙", "🧛", "🥷", "🧑‍🚀", "👨‍🎓", "👩‍🎓", "👨‍🍳", "👩‍🍳",
+  "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🦁",
+  "🐯", "🐸", "🐵", "🐧", "🐦", "🦄", "🐝", "🦋", "🐢", "🐙",
+  "🐳", "🐬", "🦈", "🐘", "🦒", "🐿️", "🦔", "🦩", "🦜", "🐲",
+  "⭐", "🌈", "🔥", "💎", "🌸", "🌻", "🎈", "🧸", "🎮", "⚽"
+];
 
 const playTone = (frequency = 440, duration = 120) => {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -39,13 +47,13 @@ const playTone = (frequency = 440, duration = 120) => {
   }, duration);
 };
 
-const getRoomTitle = (room, users, currentUserId) => {
-  if (!room?.members?.length) return "Phong";
+const getRoomInfo = (room, users, currentUserId) => {
+  if (!room?.members?.length) return { avatar: "💬", title: "Phong" };
   const otherIds = room.members.filter((id) => id !== currentUserId);
-  const names = otherIds
-    .map((id) => users.find((u) => u.id === id)?.name || "Ban be")
-    .join(", ");
-  return names || "Phong chung";
+  const others = otherIds.map((id) => users.find((u) => u.id === id)).filter(Boolean);
+  if (others.length === 1) return { avatar: others[0]?.avatar || "👤", title: others[0]?.name || "Ban be" };
+  const names = others.map((u) => u.name || "Ban be").join(", ");
+  return { avatar: "👥", title: names || "Phong chung" };
 };
 
 const isBlocked = (user) => user?.status === "blocked";
@@ -98,14 +106,20 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [mathPuzzle, setMathPuzzle] = useState(null);
   const [mathAnswer, setMathAnswer] = useState("");
   const [mathError, setMathError] = useState("");
   const [pendingParentId, setPendingParentId] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
 
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -160,6 +174,12 @@ export default function App() {
     () => users.filter((u) => u.id !== currentUserId && u.status !== "blocked"),
     [users, currentUserId]
   );
+
+  const selectedRoomInfo = useMemo(() => {
+    if (!selectedRoomId) return { avatar: "💬", title: "" };
+    const room = rooms.find((r) => r.id === selectedRoomId);
+    return getRoomInfo(room, users, currentUserId);
+  }, [rooms, users, selectedRoomId, currentUserId]);
 
   const handleLogin = useCallback((userId) => {
     const user = users.find((u) => u.id === userId);
@@ -256,6 +276,50 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        clearInterval(recordingTimerRef.current);
+        setRecordingTime(0);
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const reader = new FileReader();
+        reader.onload = async () => {
+          await handleSendMessage({ type: "audio", audioUrl: reader.result });
+        };
+        reader.readAsDataURL(blob);
+        setIsRecording(false);
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime((prev) => {
+          if (prev >= 59) {
+            mediaRecorderRef.current?.stop();
+            return 0;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (err) {
+      console.error("Mic error:", err);
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
   const handleSaveUser = async () => {
     if (!formState.name.trim()) return;
     if (formState.id) {
@@ -308,7 +372,8 @@ export default function App() {
                 <span className="avatar">{user.avatar}</span>
                 <span className="name">{user.name}</span>
                 <span className="role">{user.type === "parent" ? "🔒 Phu huynh" : "Tre em"}</span>
-                {user.status === "blocked" && <span className="tag">Bi khoa</span>}
+                {user.status === "blocked" && <span className="tag blocked-tag">🔒 Bi khoa</span>}
+                {user.status === "blocked" && <span className="unlock-hint">Nho phu huynh mo khoa</span>}
               </button>
             ))}
           </div>
@@ -371,7 +436,7 @@ export default function App() {
                 <option value="">Bat dau chat moi</option>
                 {selectableUsers.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.name} {user.type === "parent" ? "(Phu huynh)" : ""}
+                    {user.avatar} {user.name} {user.type === "parent" ? "(Phu huynh)" : ""}
                   </option>
                 ))}
               </select>
@@ -382,7 +447,9 @@ export default function App() {
             {visibleRooms.length === 0 && <p className="empty">Chua co phong chat</p>}
             {visibleRooms
               .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0))
-              .map((room) => (
+              .map((room) => {
+                const ri = getRoomInfo(room, users, currentUser.id);
+                return (
                 <button
                   key={room.id}
                   className={`room ${room.id === selectedRoomId && !showManagePanel ? "active" : ""}`}
@@ -392,10 +459,14 @@ export default function App() {
                     if (isMobile) setSidebarOpen(false);
                   }}
                 >
-                  <span className="room-title">{getRoomTitle(room, users, currentUser.id)}</span>
-                  <span className="room-sub">{room.lastMessageText || "Chua co tin nhan"}</span>
+                  <span className="room-avatar">{ri.avatar}</span>
+                  <div className="room-text">
+                    <span className="room-title">{ri.title}</span>
+                    <span className="room-sub">{room.lastMessageText || "Chua co tin nhan"}</span>
+                  </div>
                 </button>
-              ))}
+                );
+              })}
           </div>
           {currentUser.type === "parent" && (
             <>
@@ -428,11 +499,10 @@ export default function App() {
                         </select>
                       </label>
                       <label>Avatar
-                        <div className="avatar-grid">
-                          {AVATARS.map((av) => (
-                            <button key={av} type="button" className={`avatar-btn ${formState.avatar === av ? "active" : ""}`} onClick={() => setFormState({ ...formState, avatar: av })}>{av}</button>
-                          ))}
-                        </div>
+                        <button type="button" className="avatar-pick-trigger" onClick={() => setShowAvatarPicker(true)}>
+                          <span className="avatar-pick-preview">{formState.avatar}</span>
+                          <span>Chon avatar</span>
+                        </button>
                       </label>
                       <div className="form-actions">
                         <button onClick={handleSaveUser}>Luu</button>
@@ -451,7 +521,7 @@ export default function App() {
                             </div>
                             <div className="user-actions">
                               <button onClick={() => handleEditUser(user)}>Sua</button>
-                              <button className="ghost" onClick={() => handleToggleBlock(user)}>{user.status === "blocked" ? "Mo" : "Khoa"}</button>
+                              <button className={user.status === "blocked" ? "unlock" : "ghost"} onClick={() => handleToggleBlock(user)}>{user.status === "blocked" ? "🔓 Mo khoa" : "🔒 Khoa"}</button>
                               <button className="danger" onClick={() => deleteUser(user.id)}>Xoa</button>
                             </div>
                           </div>
@@ -475,8 +545,9 @@ export default function App() {
             <>
               <div className="chat-header">
                 <button className="back-btn" onClick={() => setSidebarOpen(true)}>←</button>
+                <span className="chat-header-avatar">{selectedRoomInfo.avatar}</span>
                 <div className="chat-header-info">
-                  <h2>{getRoomTitle(rooms.find((r) => r.id === selectedRoomId), users, currentUser.id)}</h2>
+                  <h2>{selectedRoomInfo.title}</h2>
                 </div>
                 {isBlocked(currentUser) && <span className="tag warn">Tai khoan bi khoa</span>}
               </div>
@@ -493,6 +564,7 @@ export default function App() {
                       {msg.type === "text" && <p>{msg.text}</p>}
                       {msg.type === "emoji" && <p className="emoji">{msg.emoji}</p>}
                       {msg.type === "image" && <img src={msg.imageUrl} alt="Hinh" />}
+                      {msg.type === "audio" && <audio controls src={msg.audioUrl} preload="metadata" />}
                       <div className="timestamp">
                         {new Date(msg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                       </div>
@@ -524,6 +596,14 @@ export default function App() {
                     📎 {imageUploading ? "Dang gui..." : "Hinh"}
                   </button>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImagePick} disabled={isBlocked(currentUser) || imageUploading} style={{ display: "none" }} />
+                  <button
+                    type="button"
+                    className={`record-btn ${isRecording ? "recording" : ""}`}
+                    onClick={isRecording ? handleStopRecording : handleStartRecording}
+                    disabled={isBlocked(currentUser)}
+                  >
+                    {isRecording ? `⏹ ${recordingTime}s` : "🎤"}
+                  </button>
                   <button type="submit" disabled={isBlocked(currentUser)} className="send-btn">Gui ➤</button>
                 </div>
               </form>
@@ -531,6 +611,27 @@ export default function App() {
           )}
         </section>
       </div>
+      {showAvatarPicker && (
+        <div className="avatar-overlay" onClick={() => setShowAvatarPicker(false)}>
+          <div className="avatar-popup" onClick={(e) => e.stopPropagation()}>
+            <button className="avatar-popup-close" onClick={() => setShowAvatarPicker(false)}>✕</button>
+            <h2>Chon Avatar</h2>
+            <div className="avatar-popup-grid">
+              {AVATARS.map((av) => (
+                <button
+                  key={av}
+                  type="button"
+                  className={`avatar-popup-btn ${formState.avatar === av ? "active" : ""}`}
+                  onClick={() => {
+                    setFormState({ ...formState, avatar: av });
+                    setShowAvatarPicker(false);
+                  }}
+                >{av}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

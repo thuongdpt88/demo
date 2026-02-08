@@ -72,7 +72,7 @@ export const sendMessage = async (roomId, message) => {
   await set(msgRef, payload);
   await update(ref(db, `rooms/${roomId}`), {
     lastMessageAt: payload.createdAt,
-    lastMessageText: payload.type === "image" ? "[Hinh]" : payload.text || payload.emoji || ""
+    lastMessageText: payload.type === "image" ? "[Hinh]" : payload.type === "audio" ? "🎤 Ghi am" : payload.text || payload.emoji || ""
   });
   return payload;
 };
