@@ -1,0 +1,9 @@
+.rewards-display {
+    padding: 16px 0;
+}
+
+.rewards-display .completed-drawings {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}

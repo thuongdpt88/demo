@@ -1,0 +1,43 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "child_user_1",
+      "avatar": "avatar1.png",
+      "role": "child",
+      "completedDrawings": [
+        {
+          "drawingId": "drawing_1",
+          "rating": 4
+        },
+        {
+          "drawingId": "drawing_2",
+          "rating": 5
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "username": "parent_user_1",
+      "avatar": "avatar2.png",
+      "role": "parent",
+      "children": [
+        {
+          "id": "1",
+          "username": "child_user_1"
+        },
+        {
+          "id": "3",
+          "username": "child_user_2"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "username": "child_user_2",
+      "avatar": "avatar3.png",
+      "role": "child",
+      "completedDrawings": []
+    }
+  ]
+}

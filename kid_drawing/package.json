@@ -1,0 +1,37 @@
+{
+  "name": "kid_drawing",
+  "version": "1.0.0",
+  "description": "A drawing and coloring app for children with user account management and parental controls.",
+  "main": "src/main.jsx",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "prop-types": "^15.8.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^5.3.4",
+    "zustand": "^4.0.0",
+    "firebase": "^9.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.0",
+    "vite": "^5.0.0",
+    "tailwindcss": "^3.0.0",
+    "postcss": "^8.0.0",
+    "eslint": "^8.0.0"
+  },
+  "keywords": [
+    "drawing",
+    "coloring",
+    "children",
+    "parental controls",
+    "react"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

@@ -1,0 +1,37 @@
+[
+    {
+        "id": 1,
+        "title": "Animal Kingdom",
+        "imageUrl": "https://example.com/images/animal-kingdom.png",
+        "categories": ["animals", "nature"],
+        "description": "A fun coloring template featuring various animals in their natural habitat."
+    },
+    {
+        "id": 2,
+        "title": "Underwater Adventure",
+        "imageUrl": "https://example.com/images/underwater-adventure.png",
+        "categories": ["ocean", "sea life"],
+        "description": "Explore the underwater world with this vibrant coloring template of sea creatures."
+    },
+    {
+        "id": 3,
+        "title": "Space Exploration",
+        "imageUrl": "https://example.com/images/space-exploration.png",
+        "categories": ["space", "science"],
+        "description": "Color the universe with rockets, planets, and stars in this exciting template."
+    },
+    {
+        "id": 4,
+        "title": "Fantasy Land",
+        "imageUrl": "https://example.com/images/fantasy-land.png",
+        "categories": ["fantasy", "mythical creatures"],
+        "description": "Bring to life a magical world filled with dragons, castles, and fairies."
+    },
+    {
+        "id": 5,
+        "title": "Seasonal Scenes",
+        "imageUrl": "https://example.com/images/seasonal-scenes.png",
+        "categories": ["seasons", "nature"],
+        "description": "A collection of seasonal scenes to color, from winter wonderlands to summer beaches."
+    }
+]

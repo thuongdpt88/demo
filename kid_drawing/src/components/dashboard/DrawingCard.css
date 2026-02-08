@@ -1,0 +1,15 @@
+.drawing-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    background: #ffffff;
+}
+
+.drawing-image {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.drawing-title {
+    margin: 8px 0 4px;
+}

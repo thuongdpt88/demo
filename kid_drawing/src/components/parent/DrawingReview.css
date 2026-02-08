@@ -1,0 +1,9 @@
+.drawing-review {
+    padding: 16px;
+}
+
+.drawing-review .drawing-list {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
