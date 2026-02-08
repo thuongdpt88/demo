@@ -10,7 +10,11 @@ from datetime import datetime, timedelta
 # Thêm đường dẫn cài đặt thư viện vào sys.path
 sys.path.append(os.path.expanduser("~/.local/lib/python3.10/site-packages"))
 
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError as e:
+    pd = None
+    print(f"Pandas chưa được cài đặt: {e}, tiếp tục không dùng pandas.")
 
 # Thử import vnstock v3
 try:
@@ -40,18 +44,18 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
     def handle_api(self):
         parsed_path = urllib.parse.urlparse(self.path)
         query_params = urllib.parse.parse_qs(parsed_path.query)
-        
+
         try:
             if parsed_path.path == "/api/quote":
                 tickers = query_params.get('tickers', [''])[0]
                 data = self.get_latest_prices(tickers)
                 self.send_json(data)
-                
+
             elif parsed_path.path == "/api/history":
                 ticker = query_params.get('ticker', [''])[0]
                 data = self.get_history(ticker)
                 self.send_json(data)
-                
+
             elif parsed_path.path == "/api/stats":
                 ticker = query_params.get('ticker', [''])[0]
                 data = self.get_stats(ticker)
@@ -72,11 +76,11 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
                     if not df.empty:
                         last = df.iloc[-1]
                         prev = df.iloc[-2] if len(df) > 1 else last
-                        
+
                         price = float(last['close'])
                         ref = float(prev['close'])
                         change_percent = (price - ref) / ref if ref != 0 else 0
-                        
+
                         results.append({
                             "ticker": t,
                             "price": price * 1000,
@@ -85,7 +89,7 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
                         })
                 except Exception as e:
                     print(f"Lỗi lấy giá cho {t}: {e}")
-            
+
             if results:
                 return {"data": results, "source": "vnstock (VCI)"}
 
@@ -108,10 +112,10 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 q = Quote(symbol=ticker, source='VCI')
                 df = q.history(count_back=100)
-                
+
                 data = []
                 time_col = 'time' if 'time' in df.columns else (df.index.name if df.index.name else 'time')
-                
+
                 if time_col not in df.columns and time_col != df.index.name:
                     df = df.reset_index()
                     time_col = 'time' if 'time' in df.columns else df.columns[0]
@@ -149,7 +153,7 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
                 if not df.empty:
                     latest = df.iloc[-1]
                     stats = {}
-                    
+
                     def get_val(lvl1, lvl2):
                         try:
                             return float(latest[(lvl1, lvl2)])
@@ -161,11 +165,11 @@ class UnifiedHandler(http.server.SimpleHTTPRequestHandler):
                     stats['roe'] = get_val('Chỉ tiêu hiệu quả hoạt động', 'ROE')
                     stats['marketCap'] = get_val('Chỉ tiêu định giá', 'Market Capital (Bn. VND)')
                     stats['eps'] = get_val('Chỉ tiêu định giá', 'EPS (VND)')
-                    
+
                     return {"data": stats, "source": "vnstock (VCI)"}
             except Exception as e:
                 print(f"Lỗi lấy stats cho {ticker}: {e}")
-        
+
         # Fallback
         return {
             "data": {
