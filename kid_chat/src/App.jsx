@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addUser,
   createRoom,
@@ -11,8 +11,16 @@ import {
   updateUser
 } from "./realtimeDb";
 
-
-const EMOJIS = ["😀", "😃", "😄", "😍", "😎", "🥰", "😘", "🥳", "🎉", "🧸", "🦊", "🦁", "🦄"];
+const EMOJIS = [
+  "😀", "😃", "😄", "😁", "😆", "😂", "🤣", "😍", "🥰", "😘", "😗", "😊",
+  "😎", "🤩", "🥳", "😇", "🤗", "🤭", "😋", "😜", "😝", "🤪", "😏", "🤤",
+  "🙈", "🙉", "🙊", "🐵", "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼",
+  "🐨", "🦁", "🐯", "🐸", "🐧", "🐦", "🦄", "🐝", "🦋", "🐢", "🐙", "🐳",
+  "🌈", "⭐", "🌟", "✨", "💫", "🔥", "💖", "💕", "💗", "💝", "💘", "❤️",
+  "🎉", "🎊", "🎈", "🎁", "🎀", "🧸", "🎮", "🎯", "⚽", "🏀", "🎸", "🎵",
+  "🍕", "🍔", "🍟", "🍦", "🍩", "🍪", "🎂", "🧁", "🍫", "🍭", "🍬", "🥤",
+  "👍", "👏", "🙌", "🤝", "✌️", "🤞", "👋", "💪", "🦸", "🦹", "👼", "🧚"
+];
 const AVATARS = ["👦", "👧", "🧒", "🧑", "🧓", "👴", "👵", "🧕", "🧖", "🦸", "🦹", "👼", "🐶", "🐱", "🐹", "🦁"];
 
 const playTone = (frequency = 440, duration = 120) => {
@@ -42,6 +50,32 @@ const getRoomTitle = (room, users, currentUserId) => {
 
 const isBlocked = (user) => user?.status === "blocked";
 
+const generateMathPuzzle = () => {
+  const ops = ["+", "-", "×"];
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let a, b, answer;
+  switch (op) {
+    case "+":
+      a = Math.floor(Math.random() * 50) + 10;
+      b = Math.floor(Math.random() * 50) + 10;
+      answer = a + b;
+      break;
+    case "-":
+      a = Math.floor(Math.random() * 50) + 30;
+      b = Math.floor(Math.random() * 30) + 1;
+      answer = a - b;
+      break;
+    case "×":
+      a = Math.floor(Math.random() * 12) + 2;
+      b = Math.floor(Math.random() * 12) + 2;
+      answer = a * b;
+      break;
+    default:
+      a = 10; b = 5; answer = 15;
+  }
+  return { question: `${a} ${op} ${b} = ?`, answer };
+};
+
 export default function App() {
   const [users, setUsers] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -51,7 +85,7 @@ export default function App() {
   );
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [chatInput, setChatInput] = useState("");
-  const [activeTab, setActiveTab] = useState("chat");
+  const [showManagePanel, setShowManagePanel] = useState(false);
   const [formState, setFormState] = useState({
     id: "",
     name: "",
@@ -62,7 +96,15 @@ export default function App() {
   const [startChatUserId, setStartChatUserId] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [mathPuzzle, setMathPuzzle] = useState(null);
+  const [mathAnswer, setMathAnswer] = useState("");
+  const [mathError, setMathError] = useState("");
+  const [pendingParentId, setPendingParentId] = useState("");
+
   const fileInputRef = useRef(null);
+  const chatInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -94,13 +136,13 @@ export default function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 900) {
-        setSidebarOpen(true);
-      }
+      const mobile = window.innerWidth <= 900;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(true);
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     handleResize();
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const currentUser = useMemo(
@@ -119,15 +161,49 @@ export default function App() {
     [users, currentUserId]
   );
 
-  const handleLogin = (userId) => {
+  const handleLogin = useCallback((userId) => {
+    const user = users.find((u) => u.id === userId);
+    if (user?.type === "parent") {
+      setPendingParentId(userId);
+      setMathPuzzle(generateMathPuzzle());
+      setMathAnswer("");
+      setMathError("");
+      return;
+    }
     setCurrentUserId(userId);
     localStorage.setItem("kid_chat_user", userId);
+  }, [users]);
+
+  const handleMathSubmit = (e) => {
+    e.preventDefault();
+    if (!mathPuzzle) return;
+    const parsed = parseInt(mathAnswer, 10);
+    if (parsed === mathPuzzle.answer) {
+      setCurrentUserId(pendingParentId);
+      localStorage.setItem("kid_chat_user", pendingParentId);
+      setMathPuzzle(null);
+      setPendingParentId("");
+      setMathAnswer("");
+      setMathError("");
+    } else {
+      setMathError("Sai roi! Thu lai nhe 😅");
+      setMathPuzzle(generateMathPuzzle());
+      setMathAnswer("");
+    }
+  };
+
+  const handleCloseMathPopup = () => {
+    setMathPuzzle(null);
+    setPendingParentId("");
+    setMathAnswer("");
+    setMathError("");
   };
 
   const handleLogout = () => {
     setCurrentUserId("");
     localStorage.removeItem("kid_chat_user");
     setSelectedRoomId("");
+    setShowManagePanel(false);
   };
 
   const handleStartChat = async () => {
@@ -164,7 +240,8 @@ export default function App() {
   };
 
   const handleEmoji = (emoji) => {
-    handleSendMessage({ type: "emoji", emoji });
+    setChatInput((prev) => prev + emoji);
+    chatInputRef.current?.focus();
   };
 
   const handleImagePick = async (event) => {
@@ -207,6 +284,7 @@ export default function App() {
       avatar: user.avatar,
       status: user.status || "active"
     });
+    setShowManagePanel(true);
   };
 
   const handleToggleBlock = async (user) => {
@@ -229,12 +307,35 @@ export default function App() {
               >
                 <span className="avatar">{user.avatar}</span>
                 <span className="name">{user.name}</span>
-                <span className="role">{user.type === "parent" ? "Phu huynh" : "Tre em"}</span>
+                <span className="role">{user.type === "parent" ? "🔒 Phu huynh" : "Tre em"}</span>
                 {user.status === "blocked" && <span className="tag">Bi khoa</span>}
               </button>
             ))}
           </div>
         </div>
+        {mathPuzzle && (
+          <div className="math-overlay" onClick={handleCloseMathPopup}>
+            <div className="math-popup" onClick={(e) => e.stopPropagation()}>
+              <button className="math-close" onClick={handleCloseMathPopup}>✕</button>
+              <div className="math-icon">🔢</div>
+              <h2>Xac nhan phu huynh</h2>
+              <p className="math-desc">Giai bai toan de dang nhap:</p>
+              <div className="math-question">{mathPuzzle.question}</div>
+              {mathError && <p className="math-error">{mathError}</p>}
+              <form onSubmit={handleMathSubmit}>
+                <input
+                  type="number"
+                  className="math-input"
+                  value={mathAnswer}
+                  onChange={(e) => setMathAnswer(e.target.value)}
+                  placeholder="Nhap dap an"
+                  autoFocus
+                />
+                <button type="submit" className="math-submit">Xac nhan</button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -243,9 +344,7 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            ☰
-          </button>
+          <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
           <span className="current-avatar">{currentUser.avatar}</span>
           <div>
             <h1>Kid Chat</h1>
@@ -253,39 +352,21 @@ export default function App() {
           </div>
         </div>
         <div className="top-actions">
-          {currentUser.type === "parent" && (
-            <div className="tabs">
-              <button
-                className={activeTab === "chat" ? "active" : ""}
-                onClick={() => setActiveTab("chat")}
-              >
-                Chat
-              </button>
-              <button
-                className={activeTab === "manage" ? "active" : ""}
-                onClick={() => setActiveTab("manage")}
-              >
-                Quan ly
-              </button>
-            </div>
-          )}
-          <button className="ghost" onClick={handleLogout}>
-            Dang xuat
-          </button>
+          <button className="ghost" onClick={handleLogout}>Dang xuat</button>
         </div>
       </header>
 
-      <main className={`layout ${activeTab}`}>
-        {sidebarOpen && window.innerWidth <= 900 && (
+      <div className="main-wrapper">
+        {sidebarOpen && isMobile && (
           <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
         )}
-        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sidebar-header">
             <h2>Phong chat</h2>
             <div className="start-chat">
               <select
                 value={startChatUserId}
-                onChange={(event) => setStartChatUserId(event.target.value)}
+                onChange={(e) => setStartChatUserId(e.target.value)}
               >
                 <option value="">Bat dau chat moi</option>
                 {selectableUsers.map((user) => (
@@ -304,19 +385,84 @@ export default function App() {
               .map((room) => (
                 <button
                   key={room.id}
-                  className={`room ${room.id === selectedRoomId ? "active" : ""}`}
+                  className={`room ${room.id === selectedRoomId && !showManagePanel ? "active" : ""}`}
                   onClick={() => {
                     setSelectedRoomId(room.id);
-                    if (window.innerWidth <= 900) setSidebarOpen(false);
+                    setShowManagePanel(false);
+                    if (isMobile) setSidebarOpen(false);
                   }}
                 >
                   <span className="room-title">{getRoomTitle(room, users, currentUser.id)}</span>
-                  <span className="room-sub">
-                    {room.lastMessageText || "Chua co tin nhan"}
-                  </span>
+                  <span className="room-sub">{room.lastMessageText || "Chua co tin nhan"}</span>
                 </button>
               ))}
           </div>
+          {currentUser.type === "parent" && (
+            <>
+              <div className="sidebar-footer">
+                <button
+                  className={`manage-btn ${showManagePanel ? "active" : ""}`}
+                  onClick={() => setShowManagePanel(!showManagePanel)}
+                >
+                  ⚙️ Quan ly tai khoan
+                </button>
+              </div>
+              {showManagePanel && (
+                <div className="sidebar-manage">
+                  <div className="sidebar-manage-inner">
+                    <div className="form-card">
+                      <h3>{formState.id ? "Sua tai khoan" : "Tao tai khoan"}</h3>
+                      <label>Ten
+                        <input value={formState.name} onChange={(e) => setFormState({ ...formState, name: e.target.value })} />
+                      </label>
+                      <label>Loai
+                        <select value={formState.type} onChange={(e) => setFormState({ ...formState, type: e.target.value })}>
+                          <option value="child">Tre em</option>
+                          <option value="parent">Phu huynh</option>
+                        </select>
+                      </label>
+                      <label>Trang thai
+                        <select value={formState.status} onChange={(e) => setFormState({ ...formState, status: e.target.value })}>
+                          <option value="active">Hoat dong</option>
+                          <option value="blocked">Bi khoa</option>
+                        </select>
+                      </label>
+                      <label>Avatar
+                        <div className="avatar-grid">
+                          {AVATARS.map((av) => (
+                            <button key={av} type="button" className={`avatar-btn ${formState.avatar === av ? "active" : ""}`} onClick={() => setFormState({ ...formState, avatar: av })}>{av}</button>
+                          ))}
+                        </div>
+                      </label>
+                      <div className="form-actions">
+                        <button onClick={handleSaveUser}>Luu</button>
+                        <button className="ghost" onClick={() => setFormState({ id: "", name: "", type: "child", avatar: AVATARS[0], status: "active" })}>Moi</button>
+                      </div>
+                    </div>
+                    <div className="list-card">
+                      <h3>Danh sach tai khoan</h3>
+                      <div className="user-list">
+                        {users.map((user) => (
+                          <div key={user.id} className={`user-item ${user.status === "blocked" ? "blocked" : ""}`}>
+                            <span className="avatar">{user.avatar}</span>
+                            <div>
+                              <strong>{user.name}</strong>
+                              <span className="meta">{user.type === "parent" ? "Phu huynh" : "Tre em"}</span>
+                            </div>
+                            <div className="user-actions">
+                              <button onClick={() => handleEditUser(user)}>Sua</button>
+                              <button className="ghost" onClick={() => handleToggleBlock(user)}>{user.status === "blocked" ? "Mo" : "Khoa"}</button>
+                              <button className="danger" onClick={() => deleteUser(user.id)}>Xoa</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </aside>
 
         <section className="chat">
@@ -328,36 +474,27 @@ export default function App() {
           ) : (
             <>
               <div className="chat-header">
-                <button className="back-btn" onClick={() => setSidebarOpen(true)}>
-                  ←
-                </button>
+                <button className="back-btn" onClick={() => setSidebarOpen(true)}>←</button>
                 <div className="chat-header-info">
                   <h2>{getRoomTitle(rooms.find((r) => r.id === selectedRoomId), users, currentUser.id)}</h2>
                 </div>
-                {isBlocked(currentUser) && (
-                  <span className="tag warn">Tai khoan bi khoa</span>
-                )}
+                {isBlocked(currentUser) && <span className="tag warn">Tai khoan bi khoa</span>}
               </div>
               <div className="messages">
                 {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`message ${msg.senderId === currentUser.id ? "mine" : ""}`}
-                  >
+                  <div key={msg.id} className={`message ${msg.senderId === currentUser.id ? "mine" : ""}`}>
                     <div className="bubble">
                       {msg.senderId !== currentUser.id && (
-                        <div className="meta">
+                        <div className="msg-meta">
                           <span className="avatar">{msg.senderAvatar}</span>
                           <span className="name">{msg.senderName}</span>
                         </div>
                       )}
                       {msg.type === "text" && <p>{msg.text}</p>}
                       {msg.type === "emoji" && <p className="emoji">{msg.emoji}</p>}
-                      {msg.type === "image" && (
-                        <img src={msg.imageUrl} alt="Hinh" />
-                      )}
+                      {msg.type === "image" && <img src={msg.imageUrl} alt="Hinh" />}
                       <div className="timestamp">
-                        {new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(msg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                       </div>
                     </div>
                   </div>
@@ -365,138 +502,35 @@ export default function App() {
                 <div ref={messagesEndRef} />
               </div>
               <form className="chat-input" onSubmit={handleSubmitText}>
-                <input
-                  value={chatInput}
-                  onChange={(event) => setChatInput(event.target.value)}
-                  placeholder={isBlocked(currentUser) ? "Tai khoan dang bi khoa" : "Nhap tin nhan"}
-                  disabled={isBlocked(currentUser)}
-                />
-                <div className="emoji-row">
-                  {EMOJIS.map((emoji) => (
-                    <button
-                      type="button"
-                      key={emoji}
-                      className="emoji-btn"
-                      onClick={() => handleEmoji(emoji)}
-                      disabled={isBlocked(currentUser)}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                <div className="input-row">
+                  <input
+                    ref={chatInputRef}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder={isBlocked(currentUser) ? "Tai khoan dang bi khoa" : "Nhap tin nhan"}
+                    disabled={isBlocked(currentUser)}
+                  />
+                  <button type="button" className="emoji-toggle" onClick={() => setShowEmojiPicker(!showEmojiPicker)} disabled={isBlocked(currentUser)}>😊</button>
                 </div>
+                {showEmojiPicker && (
+                  <div className="emoji-picker">
+                    {EMOJIS.map((emoji) => (
+                      <button type="button" key={emoji} className="emoji-btn" onClick={() => handleEmoji(emoji)} disabled={isBlocked(currentUser)}>{emoji}</button>
+                    ))}
+                  </div>
+                )}
                 <div className="actions">
-                  <button
-                    type="button"
-                    className="file-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isBlocked(currentUser) || imageUploading}
-                  >
+                  <button type="button" className="file-btn" onClick={() => fileInputRef.current?.click()} disabled={isBlocked(currentUser) || imageUploading}>
                     📎 {imageUploading ? "Dang gui..." : "Hinh"}
                   </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImagePick}
-                    disabled={isBlocked(currentUser) || imageUploading}
-                    style={{ display: 'none' }}
-                  />
-                  <button type="submit" disabled={isBlocked(currentUser)} className="send-btn">
-                    Gui ➤
-                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImagePick} disabled={isBlocked(currentUser) || imageUploading} style={{ display: "none" }} />
+                  <button type="submit" disabled={isBlocked(currentUser)} className="send-btn">Gui ➤</button>
                 </div>
               </form>
             </>
           )}
         </section>
-
-        {currentUser.type === "parent" && (
-          <section className="manage">
-            <h2>Quan ly tai khoan</h2>
-            <div className="manage-grid">
-              <div className="form-card">
-                <h3>{formState.id ? "Sua tai khoan" : "Tao tai khoan"}</h3>
-                <label>
-                  Ten
-                  <input
-                    value={formState.name}
-                    onChange={(event) => setFormState({ ...formState, name: event.target.value })}
-                  />
-                </label>
-                <label>
-                  Loai user
-                  <select
-                    value={formState.type}
-                    onChange={(event) => setFormState({ ...formState, type: event.target.value })}
-                  >
-                    <option value="child">Tre em</option>
-                    <option value="parent">Phu huynh</option>
-                  </select>
-                </label>
-                <label>
-                  Trang thai
-                  <select
-                    value={formState.status}
-                    onChange={(event) => setFormState({ ...formState, status: event.target.value })}
-                  >
-                    <option value="active">Hoat dong</option>
-                    <option value="blocked">Bi khoa</option>
-                  </select>
-                </label>
-                <label>
-                  Avatar
-                  <div className="avatar-grid">
-                    {AVATARS.map((av) => (
-                      <button
-                        key={av}
-                        type="button"
-                        className={`avatar-btn ${formState.avatar === av ? "active" : ""}`}
-                        onClick={() => setFormState({ ...formState, avatar: av })}
-                      >
-                        {av}
-                      </button>
-                    ))}
-                  </div>
-                </label>
-                <div className="form-actions">
-                  <button onClick={handleSaveUser}>Luu</button>
-                  <button
-                    className="ghost"
-                    onClick={() =>
-                      setFormState({ id: "", name: "", type: "child", avatar: AVATARS[0], status: "active" })
-                    }
-                  >
-                    Moi
-                  </button>
-                </div>
-              </div>
-              <div className="list-card">
-                <h3>Danh sach tai khoan</h3>
-                <div className="user-list">
-                  {users.map((user) => (
-                    <div key={user.id} className={`user-item ${user.status === "blocked" ? "blocked" : ""}`}>
-                      <span className="avatar">{user.avatar}</span>
-                      <div>
-                        <strong>{user.name}</strong>
-                        <span className="meta">{user.type === "parent" ? "Phu huynh" : "Tre em"}</span>
-                      </div>
-                      <div className="user-actions">
-                        <button onClick={() => handleEditUser(user)}>Sua</button>
-                        <button className="ghost" onClick={() => handleToggleBlock(user)}>
-                          {user.status === "blocked" ? "Mo" : "Khoa"}
-                        </button>
-                        <button className="danger" onClick={() => deleteUser(user.id)}>
-                          Xoa
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-      </main>
+      </div>
     </div>
   );
 }

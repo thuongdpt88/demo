@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import AvatarPicker from '../components/common/AvatarPicker';
 import { useUserStore } from '../store/userStore';
 
-const HomePage = () => {
+const HomePage = ({ isParent }) => {
     const { user, children, selectUser, createChild, setUser } = useUserStore();
     const [showCreateChild, setShowCreateChild] = useState(false);
     const [newChildName, setNewChildName] = useState('');
@@ -29,29 +29,31 @@ const HomePage = () => {
             </div>
 
             {/* Profile Selector */}
-            <div className="child-profiles-section">
-                <h3>👥 Chọn hồ sơ bé</h3>
-                <div className="child-profiles-grid">
-                    {children.map((child) => (
-                        <div
-                            key={child.id}
-                            className={`child-profile-card ${user?.id === child.id ? 'active' : ''}`}
-                            onClick={() => selectUser(child.id)}
-                        >
-                            <span className="child-avatar">{child.avatar}</span>
-                            <span className="child-name">{child.name}</span>
-                            {user?.id === child.id && <span className="active-badge">✓</span>}
+            {isParent && (
+                <div className="child-profiles-section">
+                    <h3>👥 Chọn hồ sơ bé</h3>
+                    <div className="child-profiles-grid">
+                        {children.map((child) => (
+                            <div
+                                key={child.id}
+                                className={`child-profile-card ${user?.id === child.id ? 'active' : ''}`}
+                                onClick={() => selectUser(child.id)}
+                            >
+                                <span className="child-avatar">{child.avatar}</span>
+                                <span className="child-name">{child.name}</span>
+                                {user?.id === child.id && <span className="active-badge">✓</span>}
+                            </div>
+                        ))}
+                        <div className="child-profile-card add-child" onClick={() => setShowCreateChild(true)}>
+                            <span className="child-avatar">➕</span>
+                            <span className="child-name">Thêm bé</span>
                         </div>
-                    ))}
-                    <div className="child-profile-card add-child" onClick={() => setShowCreateChild(true)}>
-                        <span className="child-avatar">➕</span>
-                        <span className="child-name">Thêm bé</span>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Create Child Modal */}
-            {showCreateChild && (
+            {showCreateChild && isParent && (
                 <div className="pin-gate-overlay" onClick={() => setShowCreateChild(false)}>
                     <div className="pin-gate-modal" onClick={(e) => e.stopPropagation()}>
                         <h3>🧒 Tạo hồ sơ mới</h3>
@@ -82,29 +84,44 @@ const HomePage = () => {
                 </div>
             )}
 
-            <AvatarPicker onSelect={handleAvatarSelect} selectedAvatar={user?.avatar} />
+            {isParent && (
+                <AvatarPicker onSelect={handleAvatarSelect} selectedAvatar={user?.avatar} />
+            )}
 
             <div className="home-cards">
-                <Link to="/draw" className="home-card card-draw">
-                    <span className="card-icon">✏️</span>
-                    <h3>Vẽ tự do</h3>
-                    <p>Vẽ bất cứ gì bé tưởng tượng!</p>
-                </Link>
-                <Link to="/color" className="home-card card-color">
-                    <span className="card-icon">🖌️</span>
-                    <h3>Tô màu</h3>
-                    <p>Tô màu những bức tranh đẹp!</p>
-                </Link>
-                <Link to="/dashboard" className="home-card card-dashboard">
-                    <span className="card-icon">📊</span>
-                    <h3>Bộ sưu tập</h3>
-                    <p>Xem tất cả bức vẽ của bé!</p>
-                </Link>
-                <Link to="/profile" className="home-card card-profile">
-                    <span className="card-icon">👤</span>
-                    <h3>Hồ sơ</h3>
-                    <p>Quản lý hồ sơ của bé!</p>
-                </Link>
+                {!isParent && (
+                    <>
+                        <Link to="/draw" className="home-card card-draw">
+                            <span className="card-icon">✏️</span>
+                            <h3>Vẽ tự do</h3>
+                            <p>Vẽ bất cứ gì bé tưởng tượng!</p>
+                        </Link>
+                        <Link to="/color" className="home-card card-color">
+                            <span className="card-icon">🖌️</span>
+                            <h3>Tô màu</h3>
+                            <p>Tô màu những bức tranh đẹp!</p>
+                        </Link>
+                        <Link to="/dashboard" className="home-card card-dashboard">
+                            <span className="card-icon">📊</span>
+                            <h3>Bộ sưu tập</h3>
+                            <p>Xem tất cả bức vẽ của bé!</p>
+                        </Link>
+                    </>
+                )}
+                {isParent && (
+                    <>
+                        <Link to="/parent-dashboard" className="home-card card-dashboard">
+                            <span className="card-icon">👨‍👩‍👧</span>
+                            <h3>Phụ huynh</h3>
+                            <p>Quản lý hồ sơ và bài vẽ của bé.</p>
+                        </Link>
+                        <Link to="/profile" className="home-card card-profile">
+                            <span className="card-icon">👤</span>
+                            <h3>Hồ sơ</h3>
+                            <p>Quản lý hồ sơ phụ huynh.</p>
+                        </Link>
+                    </>
+                )}
             </div>
         </div>
     );

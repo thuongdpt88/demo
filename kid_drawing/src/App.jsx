@@ -103,9 +103,13 @@ const NavBar = ({ isParent, onLogout }) => {
         <Link to="/" className="nav-brand">🎨 Kid Drawing</Link>
         <div className="nav-links">
           <Link to="/" className={isActive('/')}>🏠 Home</Link>
-          <Link to="/draw" className={isActive('/draw')}>✏️ Draw</Link>
-          <Link to="/color" className={isActive('/color')}>🖌️ Color</Link>
-          <Link to="/dashboard" className={isActive('/dashboard')}>📊 Dashboard</Link>
+          {!isParent && (
+            <>
+              <Link to="/draw" className={isActive('/draw')}>✏️ Draw</Link>
+              <Link to="/color" className={isActive('/color')}>🖌️ Color</Link>
+              <Link to="/dashboard" className={isActive('/dashboard')}>📊 Dashboard</Link>
+            </>
+          )}
           {isParent && (
             <>
               <Link to="/parent-dashboard" className={isActive('/parent-dashboard')}>👨‍👩‍👧 Phụ huynh</Link>
@@ -179,10 +183,14 @@ const App = () => {
         <NavBar isParent={isParent} onLogout={handleLogout} />
         <div className="page">
           <Switch>
-            <Route path="/" exact component={HomePage} />
-            <Route path="/draw" component={DrawPage} />
-            <Route path="/color" component={ColorPage} />
-            <Route path="/dashboard" component={DashboardPage} />
+            <Route
+              path="/"
+              exact
+              render={() => <HomePage isParent={isParent} />}
+            />
+            {!isParent && <Route path="/draw" component={DrawPage} />}
+            {!isParent && <Route path="/color" component={ColorPage} />}
+            {!isParent && <Route path="/dashboard" component={DashboardPage} />}
             {isParent && <Route path="/parent-dashboard" component={ParentDashboardPage} />}
             {isParent && <Route path="/profile" component={ProfilePage} />}
           </Switch>
