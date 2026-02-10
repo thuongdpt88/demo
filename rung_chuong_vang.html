@@ -114,7 +114,10 @@
                 <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-xs border border-blue-200">
                     <span id="game-topic-name">Toán</span> <span class="mx-1 text-blue-300">|</span> <span id="question-counter">1/15</span>
                 </div>
-                <div class="text-2xl font-black text-yellow-500 flex items-center gap-1"><span id="score">0</span><i class="fa-solid fa-star"></i></div>
+                <div class="flex items-center gap-2">
+                    <button onclick="speakCurrentQuestion()" aria-label="Đọc câu hỏi hiện tại" title="Đọc câu hỏi hiện tại" class="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-blue-500 hover:text-blue-700"><i class="fa-solid fa-volume-high"></i></button>
+                    <div class="text-2xl font-black text-yellow-500 flex items-center gap-1"><span id="score">0</span><i class="fa-solid fa-star"></i></div>
+                </div>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden"><div id="timer-bar" class="bg-green-500 h-3 rounded-full transition-all duration-1000 ease-linear w-full"></div></div>
             <div class="flex-grow flex flex-col justify-center items-center text-center mb-4 relative px-1">
@@ -229,6 +232,31 @@
             flip:()=>playTone(300,'sine',0.05), match:()=>{playTone(800,'sine',0.1);setTimeout(()=>playTone(1500,'sine',0.2),150)},
             win:()=>{playTone(500,'square',0.1);setTimeout(()=>playTone(700,'square',0.1),100);setTimeout(()=>playTone(900,'square',0.4),200)}
         };
+
+        let speechEnabled = true;
+        let cachedVoices = [];
+        function refreshVoices(){ cachedVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
+        if('speechSynthesis' in window){ refreshVoices(); window.speechSynthesis.onvoiceschanged = refreshVoices; }
+        function pickVietnameseVoice(){
+            const vi = cachedVoices.filter(v => (v.lang||'').toLowerCase().startsWith('vi'));
+            return vi[0] || cachedVoices[0] || null;
+        }
+        function speakText(text){
+            if(!speechEnabled || !('speechSynthesis' in window)) return;
+            const utter = new SpeechSynthesisUtterance(text);
+            const voice = pickVietnameseVoice();
+            utter.lang = voice?.lang || 'vi-VN';
+            if(voice) utter.voice = voice;
+            utter.rate = 1; utter.pitch = 1;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utter);
+        }
+        function speakCurrentQuestion(){
+            const q = quizState.questions[quizState.currentIndex];
+            if(!q) return;
+            const answers = q.a.map((ans,idx)=>`Đáp án ${idx+1}: ${ans}`).join('. ');
+            speakText(`${q.q}. ${answers}`);
+        }
 
         const genMath = (count) => {
             const arr=[];
@@ -408,6 +436,29 @@
             {q:"Cơ thể có mấy mắt?",a:["2","1","3","4"],c:0,icon:"👀"},
         ];
 
+        const extraTiengViet2 = [
+            {q:"Con gì có 4 chân và biết sủa?",a:["Chó","Mèo","Chim","Cá"],c:0,icon:"🐶"},
+            {q:"Mặt trời mọc ở đâu?",a:["Hướng Đông","Hướng Tây","Hướng Bắc","Hướng Nam"],c:0,icon:"🌅"},
+            {q:"Cái gì dùng để ăn cơm?",a:["Muỗng/Thìa","Bút","Lược","Kéo"],c:0,icon:"🥄"},
+            {q:"Con gì kêu 'Ò ó o'?",a:["Gà trống","Vịt","Chó","Mèo"],c:0,icon:"🐓"},
+            {q:"Ngày nào trong tuần là ngày nghỉ?",a:["Chủ nhật","Thứ hai","Thứ ba","Thứ tư"],c:0,icon:"📅"},
+            {q:"Cái gì dùng để quét nhà?",a:["Chổi","Thước","Kẹp","Gôm"],c:0,icon:"🧹"},
+            {q:"Con gì sống trên cây?",a:["Khỉ","Cá","Gà","Bò"],c:0,icon:"🐵"},
+            {q:"Mưa thường rơi từ đâu?",a:["Từ mây","Từ đất","Từ cây","Từ sông"],c:0,icon:"☁️"},
+            {q:"Cái gì dùng để nghe?",a:["Tai","Mắt","Mũi","Miệng"],c:0,icon:"👂"},
+            {q:"Bé uống gì để khỏe?",a:["Sữa","Nước ngọt","Cà phê","Trà đá"],c:0,icon:"🥛"},
+            {q:"Đồ vật nào dùng để soi?",a:["Gương","Bàn","Ghế","Chén"],c:0,icon:"🪞"},
+            {q:"Cái gì bay trên trời?",a:["Máy bay","Xe đạp","Ô tô","Tàu"],c:0,icon:"✈️"},
+            {q:"Cái gì dùng để tưới cây?",a:["Bình tưới","Bút","Kéo","Thước"],c:0,icon:"🌿"},
+            {q:"Mùa nào có Tết Trung Thu?",a:["Thu","Xuân","Hè","Đông"],c:0,icon:"🏮"},
+            {q:"Con gì bơi dưới nước?",a:["Cá","Chó","Mèo","Gà"],c:0,icon:"🐠"},
+            {q:"Cái gì dùng để che nắng?",a:["Mũ","Giày","Quần","Áo"],c:0,icon:"🧢"},
+            {q:"Quả gì màu cam?",a:["Cam","Chuối","Nho","Táo"],c:0,icon:"🍊"},
+            {q:"Cái gì dùng để ngủ?",a:["Giường","Bàn","Ghế","Tủ"],c:0,icon:"🛏️"},
+            {q:"Con gì thích ăn cà rốt?",a:["Thỏ","Chó","Mèo","Bò"],c:0,icon:"🐰"},
+            {q:"Cái gì dùng để mở cửa?",a:["Chìa khóa","Bút","Tẩy","Thước"],c:0,icon:"🔑"},
+        ];
+
         const extraTuNhien = [
             {q:"Hành tinh nào gần Mặt Trời nhất?",a:["Sao Thủy","Sao Kim","Trái Đất","Sao Hỏa"],c:0,icon:"☀️"},
             {q:"Động vật nào lớn nhất thế giới?",a:["Cá voi xanh","Voi","Hươu cao cổ","Cá mập"],c:0,icon:"🐋"},
@@ -431,6 +482,29 @@
             {q:"Núi nào cao nhất Việt Nam?",a:["Fansipan","Bà Đen","Langbiang","Bạch Mã"],c:0,icon:"🏔️"},
         ];
 
+        const extraTuNhien2 = [
+            {q:"Không khí gồm chủ yếu là khí gì?",a:["Nitơ","Oxi","Hidro","CO2"],c:0,icon:"💨"},
+            {q:"Cây cần gì để quang hợp?",a:["Ánh sáng","Bóng tối","Gió","Cát"],c:0,icon:"🌞"},
+            {q:"Vật nào nổi trên nước?",a:["Gỗ","Đá","Sắt","Thủy tinh"],c:0,icon:"🪵"},
+            {q:"Con gì đẻ trứng?",a:["Gà","Bò","Chó","Mèo"],c:0,icon:"🥚"},
+            {q:"Hoa hướng dương hướng về đâu?",a:["Mặt trời","Mặt trăng","Trái đất","Biển"],c:0,icon:"🌻"},
+            {q:"Sấm sét thường xuất hiện khi nào?",a:["Trời mưa","Trời nắng","Trời lạnh","Trời khô"],c:0,icon:"⛈️"},
+            {q:"Nước ở thể rắn gọi là?",a:["Nước đá","Hơi nước","Sương","Bọt"],c:0,icon:"🧊"},
+            {q:"Bầu trời thường có màu gì?",a:["Xanh","Đỏ","Tím","Đen"],c:0,icon:"🟦"},
+            {q:"Loài vật nào sống theo bầy đàn?",a:["Sói","Rùa","Cá sấu","Gấu"],c:0,icon:"🐺"},
+            {q:"Con chim nào không biết bay?",a:["Đà điểu","Chim sẻ","Chim én","Chim bồ câu"],c:0,icon:"🐦"},
+            {q:"Núi lửa phun ra gì?",a:["Dung nham","Nước","Cát","Gió"],c:0,icon:"🌋"},
+            {q:"Cá thở bằng gì?",a:["Mang","Phổi","Da","Mũi"],c:0,icon:"🐟"},
+            {q:"Cây nào sống ở sa mạc?",a:["Xương rồng","Lúa","Dừa","Sen"],c:0,icon:"🌵"},
+            {q:"Băng tan nhờ đâu?",a:["Nhiệt","Gió","Mưa","Bóng tối"],c:0,icon:"🔥"},
+            {q:"Sao nào sáng nhất ban đêm?",a:["Sao Kim","Sao Thủy","Sao Hỏa","Sao Mộc"],c:0,icon:"✨"},
+            {q:"Động vật nào có vú?",a:["Cá heo","Cá mập","Cá ngừ","Cá chép"],c:0,icon:"🐬"},
+            {q:"Mưa đá là gì?",a:["Hạt băng","Hạt cát","Lá cây","Sương"],c:0,icon:"🌨️"},
+            {q:"Chim thường làm tổ ở đâu?",a:["Trên cây","Dưới đất","Dưới nước","Trong đá"],c:0,icon:"🌳"},
+            {q:"Con gì sống trên sa mạc?",a:["Lạc đà","Cá","Ếch","Chim cánh cụt"],c:0,icon:"🐪"},
+            {q:"Trái đất có mấy mùa?",a:["4","3","2","5"],c:0,icon:"🌍"},
+        ];
+
         const extraLogic = [
             {q:"Số nào lớn nhất trong 15, 51, 55, 11?",a:["55","51","15","11"],c:0},
             {q:"Con gì đầu mèo, đuôi mèo mà không phải mèo?",a:["Mèo con","Chó","Chuột","Thỏ"],c:0,icon:"🐱"},
@@ -448,6 +522,52 @@
             {q:"Nước nào nhỏ nhất?",a:["Nước mắt","Nước Nga","Nước Mỹ","Nước Pháp"],c:0,icon:"😢"},
             {q:"Con gì càng tắm càng bẩn?",a:["Con nước","Con mèo","Con chó","Con voi"],c:0},
             {q:"Cái gì có 4 chân mà không biết đi?",a:["Cái bàn","Con bò","Con chó","Con vịt"],c:0,icon:"🪑"},
+        ];
+
+        const extraLogic2 = [
+            {q:"Số nào nhỏ nhất trong 9, 6, 3, 12?",a:["3","6","9","12"],c:0},
+            {q:"Hình tròn có mấy cạnh?",a:["0","1","2","3"],c:0,icon:"⚪"},
+            {q:"Nếu 2 + 2 = 4 thì 2 + 3 = ?",a:["5","4","6","7"],c:0},
+            {q:"Sáng hơn là?",a:["Đèn","Bóng tối","Mây","Sương"],c:0,icon:"💡"},
+            {q:"Cái gì luôn đi cùng em?",a:["Bóng","Mũ","Giày","Áo"],c:0,icon:"👣"},
+            {q:"Hôm nay trước hôm qua hay sau hôm qua?",a:["Sau hôm qua","Trước hôm qua","Giống nhau","Không biết"],c:0},
+            {q:"Con số nào đứng giữa 4 và 6?",a:["5","3","7","8"],c:0},
+            {q:"Một tuần có mấy ngày cuối tuần?",a:["2","1","3","4"],c:0},
+            {q:"Cái gì càng đi càng mòn?",a:["Đường","Sông","Gió","Mây"],c:0},
+            {q:"Số nào là số chẵn?",a:["8","7","5","9"],c:0},
+            {q:"Con gì vừa ăn vừa kêu?",a:["Đồng hồ báo thức","Chó","Gà","Mèo"],c:0,icon:"⏰"},
+            {q:"Một đàn gà có 5 con, có bao nhiêu chân?",a:["10","5","20","8"],c:0},
+            {q:"Cái gì có kim mà không biết khâu?",a:["Đồng hồ","Áo","Bút","Chén"],c:0,icon:"🕐"},
+            {q:"Số nào đứng trước 20?",a:["19","21","18","22"],c:0},
+            {q:"Cái gì càng nói càng nhỏ?",a:["Bí mật","Cái bàn","Con mèo","Quả bóng"],c:0},
+            {q:"Hình chữ nhật có mấy cạnh?",a:["4","3","5","2"],c:0,icon:"▭"},
+            {q:"Số nào là số lẻ?",a:["9","8","6","4"],c:0},
+            {q:"Điều gì xảy ra sau buổi sáng?",a:["Buổi trưa","Buổi tối","Buổi khuya","Buổi sớm"],c:0},
+            {q:"Cái gì bay mà không có cánh?",a:["Thời gian","Chim","Máy bay","Bóng"],c:0,icon:"⏳"},
+            {q:"Một năm có mấy mùa?",a:["4","2","3","5"],c:0},
+        ];
+
+        const extraTiengAnh2 = [
+            {q:"Green là màu gì?",a:["Xanh lá","Đỏ","Vàng","Tím"],c:0,icon:"🟩"},
+            {q:"Orange là màu gì?",a:["Cam","Xanh","Đen","Trắng"],c:0,icon:"🟧"},
+            {q:"Chair là gì?",a:["Cái ghế","Cái bàn","Cửa","Giường"],c:0,icon:"🪑"},
+            {q:"Window là gì?",a:["Cửa sổ","Cửa ra vào","Mái nhà","Sàn"],c:0,icon:"🪟"},
+            {q:"Milk là gì?",a:["Sữa","Nước","Bánh","Trà"],c:0,icon:"🥛"},
+            {q:"Bread là gì?",a:["Bánh mì","Cơm","Phở","Bún"],c:0,icon:"🍞"},
+            {q:"Fish là con gì?",a:["Cá","Gà","Chó","Mèo"],c:0,icon:"🐟"},
+            {q:"Duck là con gì?",a:["Vịt","Gà","Chim","Heo"],c:0,icon:"🦆"},
+            {q:"Rain là gì?",a:["Mưa","Nắng","Gió","Tuyết"],c:0,icon:"🌧️"},
+            {q:"Snow là gì?",a:["Tuyết","Mưa","Nắng","Mây"],c:0,icon:"❄️"},
+            {q:"Sit nghĩa là?",a:["Ngồi","Đứng","Chạy","Nhảy"],c:0,icon:"🪑"},
+            {q:"Run là gì?",a:["Chạy","Ngủ","Ăn","Đọc"],c:0,icon:"🏃"},
+            {q:"Swim là gì?",a:["Bơi","Bay","Đi","Ngủ"],c:0,icon:"🏊"},
+            {q:"Jump là gì?",a:["Nhảy","Ngồi","Hát","Vẽ"],c:0,icon:"🦘"},
+            {q:"Happy nghĩa là?",a:["Vui","Buồn","Giận","Sợ"],c:0,icon:"😊"},
+            {q:"Sad nghĩa là?",a:["Buồn","Vui","Giận","Mệt"],c:0,icon:"😢"},
+            {q:"Boy là gì?",a:["Bé trai","Bé gái","Mẹ","Bố"],c:0,icon:"👦"},
+            {q:"Girl là gì?",a:["Bé gái","Bé trai","Ông","Bà"],c:0,icon:"👧"},
+            {q:"Morning là?",a:["Buổi sáng","Buổi tối","Buổi trưa","Buổi đêm"],c:0,icon:"🌅"},
+            {q:"Night là?",a:["Ban đêm","Ban ngày","Buổi sáng","Buổi trưa"],c:0,icon:"🌙"},
         ];
 
         // === EXTRA MATH GENERATOR (multiplication & sequences) ===
@@ -476,11 +596,11 @@
         let onlineQuestions = []; // Will be populated from online API
 
         const questionBank = {
-            toan: [...genMath(40), ...genExtraMath(30)],
-            tiengviet: [...staticQ.tiengviet, ...extraTiengViet],
-            tienganh: [...staticQ.tienganh, ...genTiengAnhFromBank(30)],
-            tunhien: [...staticQ.tunhien, ...extraTuNhien],
-            logic: [...staticQ.logic, ...extraLogic]
+            toan: [...genMath(60), ...genExtraMath(50)],
+            tiengviet: [...staticQ.tiengviet, ...extraTiengViet, ...extraTiengViet2],
+            tienganh: [...staticQ.tienganh, ...genTiengAnhFromBank(40), ...extraTiengAnh2],
+            tunhien: [...staticQ.tunhien, ...extraTuNhien, ...extraTuNhien2],
+            logic: [...staticQ.logic, ...extraLogic, ...extraLogic2]
         };
 
         const flashcardData = {
@@ -499,6 +619,7 @@
         let currentUser=null, selectedAvatar=avatars[0], editUserId=null, performanceChart=null, activeExitScreen=null;
         let quizState={topic:'',questions:[],currentIndex:0,score:0,timer:null,timeLeft:15,maxQuestions:15};
         let memoryState={cards:[],flipped:[],matched:[],moves:0,canFlip:true,level:'', timer: null, timeLeft: 30, totalTime: 30};
+        let lastCorrectIndex = null;
 
         const screens = { user:document.getElementById('screen-user'), topic:document.getElementById('screen-topic'), game:document.getElementById('screen-game'), memory:document.getElementById('screen-memory'), result:document.getElementById('screen-result'), dashboard:document.getElementById('screen-dashboard') };
 
@@ -517,18 +638,29 @@
         // --- QUIZ LOGIC ---
         function startGame(tk){
             // Regenerate dynamic questions each game for variety
-            questionBank.toan = [...genMath(40), ...genExtraMath(30)];
-            questionBank.tienganh = [...staticQ.tienganh, ...genTiengAnhFromBank(30), ...onlineQuestions];
+            lastCorrectIndex = null;
+            questionBank.toan = [...genMath(60), ...genExtraMath(50)];
+            questionBank.tienganh = [...staticQ.tienganh, ...genTiengAnhFromBank(40), ...extraTiengAnh2, ...onlineQuestions];
             let qs = (tk==='tonghop') ? Object.values(questionBank).flat() : [...questionBank[tk]];
             qs = qs.sort(()=>0.5-Math.random()).slice(0,15);
             // Fisher-Yates shuffle answer positions so correct answer is random
             qs.forEach(q => {
                 const correctAns = q.a[q.c];
-                for(let i = q.a.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [q.a[i], q.a[j]] = [q.a[j], q.a[i]];
+                let attempts = 0;
+                do {
+                    for(let i = q.a.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [q.a[i], q.a[j]] = [q.a[j], q.a[i]];
+                    }
+                    q.c = q.a.indexOf(correctAns);
+                    attempts++;
+                } while(lastCorrectIndex !== null && q.c === lastCorrectIndex && attempts < 5);
+                if(lastCorrectIndex !== null && q.c === lastCorrectIndex && q.a.length > 1){
+                    const swapIdx = q.c === 0 ? 1 : 0;
+                    [q.a[q.c], q.a[swapIdx]] = [q.a[swapIdx], q.a[q.c]];
+                    q.c = q.a.indexOf(correctAns);
                 }
-                q.c = q.a.indexOf(correctAns);
+                lastCorrectIndex = q.c;
             });
             quizState={topic:tk,questions:qs,currentIndex:0,score:0,timer:null,timeLeft:15,maxQuestions:qs.length};
             document.getElementById('game-topic-name').innerText=topics[tk]; document.getElementById('score').innerText='0';
@@ -545,6 +677,7 @@
             quizState.timeLeft=15; updateTimerBar();
             if(quizState.timer) clearInterval(quizState.timer);
             quizState.timer=setInterval(()=>{ quizState.timeLeft--; updateTimerBar(); if(quizState.timeLeft<=0) handleTimeOut(); },1000);
+            speakCurrentQuestion();
         }
         function updateTimerBar(){ const b=document.getElementById('timer-bar'); b.style.width=`${(quizState.timeLeft/15)*100}%`; b.style.backgroundColor=quizState.timeLeft<5?'#ef4444':'#22c55e'; }
         function handleTimeOut(){ clearInterval(quizState.timer); sfx.wrong(); disableInputs(); setTimeout(()=>{quizState.currentIndex++; loadQuestion();},1500); }
