@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Switch, Link, Redirect, useLocation, useHistory } from 'react-router-dom';
 import DrawPage from './pages/DrawPage';
 import ColorPage from './pages/ColorPage';
@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import ParentDashboardPage from './pages/ParentDashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import { useUserStore } from './store/userStore';
+import { useDrawingStore } from './store/drawingStore';
 import './index.css';
 
 /* ===== Account Selection Screen ===== */
@@ -154,6 +155,15 @@ const App = () => {
   const [accountSelected, setAccountSelected] = useState(false);
   const user = useUserStore((s) => s.user);
   const selectUser = useUserStore((s) => s.selectUser);
+  const loadingUsers = useUserStore((s) => s.loadingUsers);
+  const syncError = useUserStore((s) => s.syncError);
+  const initUserSync = useUserStore((s) => s.initUserSync);
+  const initDrawingSync = useDrawingStore((s) => s.initDrawingSync);
+
+  useEffect(() => {
+    initUserSync();
+    initDrawingSync();
+  }, [initUserSync, initDrawingSync]);
 
   const handleSelect = (userId) => {
     selectUser(userId);
@@ -163,6 +173,45 @@ const App = () => {
   const handleLogout = () => {
     setAccountSelected(false);
   };
+
+  const handleRetry = () => {
+    useUserStore.setState({ _userSyncStarted: false, loadingUsers: true, syncError: null });
+    useDrawingStore.setState({ _drawingSyncStarted: false, loadingDrawings: true, syncError: null });
+    initUserSync();
+    initDrawingSync();
+  };
+
+  if (syncError) {
+    return (
+      <div className="account-selector-screen">
+        <div className="account-selector-content">
+          <div className="account-selector-header">
+            <h1>🎨 Kid Drawing</h1>
+            <p style={{ color: '#e74c3c' }}>Lỗi kết nối: {syncError}</p>
+            <p style={{ fontSize: '14px', color: '#888', marginTop: '8px' }}>
+              Kiểm tra kết nối mạng và Firebase Rules.
+            </p>
+            <button onClick={handleRetry} className="btn-primary" style={{ marginTop: '16px' }}>
+              🔄 Thử lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadingUsers) {
+    return (
+      <div className="account-selector-screen">
+        <div className="account-selector-content">
+          <div className="account-selector-header">
+            <h1>🎨 Kid Drawing</h1>
+            <p>Đang tải dữ liệu...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!accountSelected) {
     return (

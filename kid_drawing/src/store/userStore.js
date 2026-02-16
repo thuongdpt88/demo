@@ -1,25 +1,18 @@
 import { create } from 'zustand';
 import { DEFAULT_AVATAR } from '../utils/constants';
+import {
+  getUsersOnce,
+  subscribeUsers,
+  setUser,
+  updateUser,
+  removeUser,
+  getMetaOnce,
+  setMeta,
+  subscribeMeta,
+  updateMeta,
+  updateDrawing,
+} from '../realtimeDb';
 
-// Load from localStorage
-const loadState = () => {
-  try {
-    const saved = localStorage.getItem('kid_drawing_users');
-    if (saved) return JSON.parse(saved);
-  } catch (e) { /* ignore */ }
-  return null;
-};
-
-const saveState = (state) => {
-  try {
-    localStorage.setItem('kid_drawing_users', JSON.stringify({
-      users: state.users,
-      children: state.children,
-      currentUserId: state.currentUser?.id,
-      nextId: state.nextId,
-    }));
-  } catch (e) { /* ignore */ }
-};
 
 const defaultChild = {
   id: 1,
@@ -41,35 +34,86 @@ const defaultParent = {
   completedDrawings: [],
 };
 
-const initState = () => {
-  const saved = loadState();
-  if (saved) {
-    const currentUser = saved.users.find(u => u.id === saved.currentUserId) || saved.users[0];
-    return {
-      users: saved.users,
-      children: saved.children,
-      currentUser,
-      user: currentUser,
-      nextId: saved.nextId || saved.users.length + 1,
-    };
-  }
-  return {
-    users: [defaultChild, defaultParent],
-    children: [defaultChild],
-    currentUser: defaultChild,
-    user: defaultChild,
-    nextId: 3,
-  };
+const toUserArray = (usersObj) => {
+  return Object.values(usersObj || {}).sort((a, b) => Number(a.id) - Number(b.id));
 };
 
-const initial = initState();
+const pickCurrentUser = (users) => {
+  if (!users.length) return null;
+  return users[0];
+};
 
 const useUserStore = create((set, get) => ({
-  ...initial,
+  users: [defaultChild, defaultParent],
+  children: [defaultChild],
+  currentUser: defaultChild,
+  user: defaultChild,
+  nextId: 3,
+  loadingUsers: true,
+  syncError: null,
+  _userSyncStarted: false,
+  _userUnsubscribe: null,
+  _metaUnsubscribe: null,
 
-  createChild: (name, avatar) => set((state) => {
+  initUserSync: async () => {
+    if (get()._userSyncStarted) return;
+    set({ _userSyncStarted: true, loadingUsers: true, syncError: null });
+
+    try {
+      console.log('[UserStore] initUserSync: fetching users from RTDB...');
+      const usersSnapshot = await getUsersOnce();
+      console.log('[UserStore] getUsersOnce result:', usersSnapshot);
+
+      if (!usersSnapshot || Object.keys(usersSnapshot).length === 0) {
+        console.log('[UserStore] No users found, seeding defaults...');
+        await setUser(defaultChild.id, defaultChild);
+        await setUser(defaultParent.id, defaultParent);
+        await setMeta({ nextUserId: 3 });
+        console.log('[UserStore] Seed data written OK');
+      }
+
+      const userUnsub = subscribeUsers((usersObj) => {
+        console.log('[UserStore] subscribeUsers fired, keys:', Object.keys(usersObj || {}));
+        const users = toUserArray(usersObj);
+        const children = users.filter(u => !u.isParent);
+        const prev = get().currentUser;
+        const currentUser = (prev && users.find(u => Number(u.id) === Number(prev.id)))
+          || pickCurrentUser(users) || users[0] || defaultChild;
+        set({
+          users,
+          children,
+          currentUser,
+          user: currentUser,
+          loadingUsers: false,
+          syncError: null,
+        });
+      });
+
+      const metaUnsub = subscribeMeta((meta) => {
+        const nextId = meta?.nextUserId || get().nextId || 3;
+        set({ nextId });
+      });
+
+      set({ _userUnsubscribe: userUnsub, _metaUnsubscribe: metaUnsub });
+    } catch (err) {
+      console.error('[UserStore] initUserSync FAILED:', err);
+      set({ loadingUsers: false, syncError: err.message || 'Lỗi kết nối Firebase', _userSyncStarted: false });
+    }
+  },
+
+  cleanupUserSync: () => {
+    const { _userUnsubscribe, _metaUnsubscribe } = get();
+    if (typeof _userUnsubscribe === 'function') _userUnsubscribe();
+    if (typeof _metaUnsubscribe === 'function') _metaUnsubscribe();
+    set({ _userUnsubscribe: null, _metaUnsubscribe: null, _userSyncStarted: false });
+  },
+
+  createChild: async (name, avatar) => {
+    const state = get();
+    const meta = await getMetaOnce();
+    const nextId = meta?.nextUserId || state.nextId || 3;
     const newChild = {
-      id: state.nextId,
+      id: nextId,
       name: name || `Bé ${state.children.length + 1}`,
       avatar: avatar || DEFAULT_AVATAR,
       isParent: false,
@@ -77,123 +121,64 @@ const useUserStore = create((set, get) => ({
       completedDrawings: [],
       createdAt: new Date().toISOString(),
     };
-    const newState = {
-      users: [...state.users, newChild],
-      children: [...state.children, newChild],
-      nextId: state.nextId + 1,
-    };
-    saveState({ ...state, ...newState });
-    return newState;
-  }),
+    await setUser(newChild.id, newChild);
+    await updateMeta({ nextUserId: nextId + 1 });
+  },
 
-  removeChild: (childId) => set((state) => {
-    if (state.children.length <= 1) return state; // keep at least 1
-    const newState = {
-      users: state.users.filter(u => u.id !== childId),
-      children: state.children.filter(u => u.id !== childId),
-      currentUser: state.currentUser?.id === childId ? state.children.find(c => c.id !== childId) || state.currentUser : state.currentUser,
-      user: state.user?.id === childId ? state.children.find(c => c.id !== childId) || state.user : state.user,
-    };
-    saveState({ ...state, ...newState });
-    return newState;
-  }),
+  removeChild: async (childId) => {
+    const state = get();
+    if (state.children.length <= 1) return; // keep at least 1
+    await removeUser(childId);
+  },
 
-  addUser: (user) => set((state) => {
-    const newState = {
-      users: [...state.users, user],
-      children: user.isParent ? state.children : [...state.children, user],
-    };
-    saveState({ ...state, ...newState });
-    return newState;
-  }),
+  addUser: async (user) => {
+    if (!user?.id) return;
+    await setUser(user.id, user);
+  },
 
-  setUser: (updates) => set((state) => {
-    const updated = { ...state.currentUser, ...updates };
-    const newState = {
-      currentUser: updated,
-      user: updated,
-      users: state.users.map((item) => (item.id === updated.id ? updated : item)),
-      children: state.children.map((item) => (item.id === updated.id ? updated : item)),
-    };
-    saveState({ ...state, ...newState });
-    return newState;
-  }),
+  setUser: async (updates) => {
+    const state = get();
+    const current = state.currentUser;
+    if (!current?.id) return;
+    await updateUser(current.id, updates);
+  },
 
   selectUser: (userId) => set((state) => {
-    const selected = state.users.find((u) => u.id === userId) || state.currentUser;
-    const newState = { currentUser: selected, user: selected };
-    saveState({ ...state, ...newState, currentUserId: selected.id });
-    return newState;
+    const selected = state.users.find((u) => Number(u.id) === Number(userId)) || state.currentUser;
+    return { currentUser: selected, user: selected };
   }),
 
   setCurrentUser: (userId) => set((state) => {
-    const selected = state.users.find((u) => u.id === userId) || state.currentUser;
-    const newState = { currentUser: selected, user: selected };
-    saveState({ ...state, ...newState, currentUserId: selected.id });
-    return newState;
+    const selected = state.users.find((u) => Number(u.id) === Number(userId)) || state.currentUser;
+    return { currentUser: selected, user: selected };
   }),
 
-  updateAvatar: (userIdOrAvatar, avatar) => set((state) => {
+  updateAvatar: async (userIdOrAvatar, avatar) => {
     const isId = typeof userIdOrAvatar === 'number';
-    const targetId = isId ? userIdOrAvatar : state.currentUser?.id;
+    const targetId = isId ? userIdOrAvatar : get().currentUser?.id;
     const nextAvatar = isId ? avatar : userIdOrAvatar;
-    const newState = {
-      currentUser: state.currentUser && state.currentUser.id === targetId
-        ? { ...state.currentUser, avatar: nextAvatar }
-        : state.currentUser,
-      user: state.user && state.user.id === targetId
-        ? { ...state.user, avatar: nextAvatar }
-        : state.user,
-      users: state.users.map((item) =>
-        item.id === targetId ? { ...item, avatar: nextAvatar } : item
-      ),
-      children: state.children.map((item) =>
-        item.id === targetId ? { ...item, avatar: nextAvatar } : item
-      ),
-    };
-    saveState({ ...state, ...newState });
-    return newState;
-  }),
+    if (!targetId) return;
+    await updateUser(targetId, { avatar: nextAvatar });
+  },
 
-  updateUserAvatar: (avatar, userId) => set((state) => {
-    const targetId = userId || state.currentUser?.id;
-    const newState = {
-      currentUser: state.currentUser && state.currentUser.id === targetId
-        ? { ...state.currentUser, avatar }
-        : state.currentUser,
-      user: state.user && state.user.id === targetId
-        ? { ...state.user, avatar }
-        : state.user,
-      users: state.users.map((item) =>
-        item.id === targetId ? { ...item, avatar } : item
-      ),
-      children: state.children.map((item) =>
-        item.id === targetId ? { ...item, avatar } : item
-      ),
-    };
-    saveState({ ...state, ...newState });
-    return newState;
-  }),
+  updateUserAvatar: async (avatar, userId) => {
+    const targetId = userId || get().currentUser?.id;
+    if (!targetId) return;
+    await updateUser(targetId, { avatar });
+  },
 
   verifyParentPin: (pin) => {
     const parent = get().users.find(u => u.isParent);
     return parent && (parent.pin === pin || pin === '1234');
   },
 
-  rateDrawing: (drawingId, rating) => set((state) => ({
-    users: state.users.map((user) => ({
-      ...user,
-      drawings: (user.drawings || []).map((drawing) =>
-        drawing.id === drawingId ? { ...drawing, rating } : drawing
-      ),
-      completedDrawings: (user.completedDrawings || []).map((drawing) =>
-        drawing.id === drawingId ? { ...drawing, rating } : drawing
-      ),
-    })),
-  })),
+  rateDrawing: async (drawingId, rating) => {
+    if (!drawingId) return;
+    await updateDrawing(drawingId, { rating });
+  },
 
   getUserDrawings: (userId) => {
-    const user = get().users.find((u) => u.id === userId);
+    const user = get().users.find((u) => Number(u.id) === Number(userId));
     return user ? user.drawings : [];
   },
 }));
