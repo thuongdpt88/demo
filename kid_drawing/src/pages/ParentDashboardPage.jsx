@@ -11,6 +11,8 @@ const ParentDashboardPage = () => {
     const [showCreateChild, setShowCreateChild] = useState(false);
     const [newChildName, setNewChildName] = useState('');
     const [newChildAvatar, setNewChildAvatar] = useState('🐱');
+    const [filterChildId, setFilterChildId] = useState('all');
+    const [zoomedDrawing, setZoomedDrawing] = useState(null);
 
     const handleCreateChild = () => {
         if (!newChildName.trim()) return;
@@ -20,9 +22,14 @@ const ParentDashboardPage = () => {
         setShowCreateChild(false);
     };
 
-    const totalRated = completedDrawings.filter(d => d.rating > 0).length;
+    // Filter drawings
+    const filteredDrawings = filterChildId === 'all'
+        ? completedDrawings
+        : completedDrawings.filter(d => String(d.childId) === String(filterChildId));
+
+    const totalRated = filteredDrawings.filter(d => d.rating > 0).length;
     const avgRating = totalRated > 0
-        ? (completedDrawings.filter(d => d.rating > 0).reduce((s, d) => s + d.rating, 0) / totalRated).toFixed(1)
+        ? (filteredDrawings.filter(d => d.rating > 0).reduce((s, d) => s + d.rating, 0) / totalRated).toFixed(1)
         : '0.0';
 
     return (
@@ -37,11 +44,11 @@ const ParentDashboardPage = () => {
                 </div>
                 <div className="stat-item stat-drawings">
                     <h3>🎨 Tổng bài</h3>
-                    <p>{completedDrawings.length}</p>
+                    <p>{filteredDrawings.length}</p>
                 </div>
                 <div className="stat-item stat-completed">
-                    <h3>✅ Hoàn thành</h3>
-                    <p>{completedDrawings.length}</p>
+                    <h3>✅ Đã chấm</h3>
+                    <p>{totalRated}</p>
                 </div>
                 <div className="stat-item stat-rating">
                     <h3>⭐ Điểm TB</h3>
@@ -95,11 +102,34 @@ const ParentDashboardPage = () => {
             </div>
 
             {/* Review Drawings */}
-            {completedDrawings.length > 0 && (
-                <div className="dashboard-section">
+            <div className="dashboard-section">
+                <div className="drawing-section-header">
                     <h3>🎨 Chấm điểm bài của bé</h3>
+                    {children.length > 1 && (
+                        <div className="filter-bar">
+                            <span className="filter-label">🔍 Lọc theo:</span>
+                            <button
+                                className={`filter-chip ${filterChildId === 'all' ? 'active' : ''}`}
+                                onClick={() => setFilterChildId('all')}
+                            >
+                                Tất cả
+                            </button>
+                            {children.map(child => (
+                                <button
+                                    key={child.id}
+                                    className={`filter-chip ${String(filterChildId) === String(child.id) ? 'active' : ''}`}
+                                    onClick={() => setFilterChildId(child.id)}
+                                >
+                                    {child.avatar} {child.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {filteredDrawings.length > 0 ? (
                     <div className="drawing-grid">
-                        {completedDrawings.map((drawing) => {
+                        {filteredDrawings.map((drawing) => {
                             const isRated = drawing.rating > 0;
                             return (
                                 <div key={drawing.id} className={`drawing-card ${isRated ? 'drawing-card-rated' : ''}`}>
@@ -109,7 +139,13 @@ const ParentDashboardPage = () => {
                                             : <span className="status-badge status-pending">📝 Chờ chấm</span>
                                         }
                                     </div>
-                                    <img src={drawing.imageUrl} alt={drawing.title} />
+                                    <img
+                                        src={drawing.imageUrl}
+                                        alt={drawing.title}
+                                        onClick={() => setZoomedDrawing(drawing)}
+                                        style={{ cursor: 'zoom-in' }}
+                                        title="Nhấn để phóng to"
+                                    />
                                     <h3>{drawing.title}</h3>
                                     <StarRating
                                         rating={drawing.rating || 0}
@@ -128,13 +164,49 @@ const ParentDashboardPage = () => {
                             );
                         })}
                     </div>
-                </div>
-            )}
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>
+                        <p style={{ fontSize: '3rem' }}>🎨</p>
+                        <p style={{ color: '#94a3b8' }}>
+                            {filterChildId === 'all'
+                                ? 'Chưa có bài vẽ nào. Hãy để bé bắt đầu sáng tạo!'
+                                : 'Bé này chưa có bài vẽ nào.'}
+                        </p>
+                    </div>
+                )}
+            </div>
 
-            {completedDrawings.length === 0 && (
-                <div className="dashboard-section" style={{ textAlign: 'center', padding: '2rem' }}>
-                    <p style={{ fontSize: '3rem' }}>🎨</p>
-                    <p style={{ color: '#94a3b8' }}>Chưa có bài vẽ nào. Hãy để bé bắt đầu sáng tạo!</p>
+            {/* Zoom Modal */}
+            {zoomedDrawing && (
+                <div className="zoom-overlay" onClick={() => setZoomedDrawing(null)}>
+                    <div className="zoom-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="zoom-header">
+                            <h3>{zoomedDrawing.title}</h3>
+                            <button className="zoom-close-btn" onClick={() => setZoomedDrawing(null)}>✕</button>
+                        </div>
+                        <div className="zoom-image-wrapper">
+                            <img src={zoomedDrawing.imageUrl} alt={zoomedDrawing.title} />
+                        </div>
+                        <div className="zoom-footer">
+                            <div className="zoom-info">
+                                <span>{zoomedDrawing.type === 'coloring' ? '🖌️ Tô màu' : '✏️ Vẽ tự do'}</span>
+                                {zoomedDrawing.childName && <span> • {zoomedDrawing.childName}</span>}
+                                {zoomedDrawing.createdAt && (
+                                    <span> • {new Date(zoomedDrawing.createdAt).toLocaleDateString('vi-VN')}</span>
+                                )}
+                            </div>
+                            <div className="zoom-rating">
+                                <span style={{ fontWeight: 600, marginRight: '8px' }}>Chấm điểm:</span>
+                                <StarRating
+                                    rating={zoomedDrawing.rating || 0}
+                                    onRate={(rating) => {
+                                        rateDrawing(zoomedDrawing.id, rating);
+                                        setZoomedDrawing({ ...zoomedDrawing, rating });
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

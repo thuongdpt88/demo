@@ -20,9 +20,6 @@ const ColorPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [history, setHistory] = useState([]);
   const [originalData, setOriginalData] = useState(null);
-  const [showUrlInput, setShowUrlInput] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
-  const [urlError, setUrlError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -103,7 +100,6 @@ const ColorPage = () => {
       }
       setHistory([]);
       setLoading(false);
-      setUrlError('');
     };
 
     img.onerror = () => {
@@ -112,7 +108,6 @@ const ColorPage = () => {
         loadImageOnCanvas(imgSrc, false);
       } else {
         setLoading(false);
-        setUrlError('Không thể tải hình. Thử URL khác nhé!');
       }
     };
 
@@ -217,17 +212,6 @@ const ColorPage = () => {
     setShowCelebration(true);
   }, [selectedTemplate, editingDrawingId, user, addCompletedDrawing, updateCompletedDrawing, setEditingDrawing, isRated]);
 
-  const handleLoadUrl = () => {
-    const url = urlInput.trim();
-    if (!url) return;
-    setUrlError('');
-    setSelectedTemplate({ name: 'Hình tải về', emoji: '🖼️' });
-    setView('coloring');
-    setTimeout(() => loadImageOnCanvas(url), 50);
-    setShowUrlInput(false);
-    setUrlInput('');
-  };
-
   const goBackToGallery = () => {
     setView('gallery');
     setSelectedTemplate(null);
@@ -251,35 +235,6 @@ const ColorPage = () => {
               <span className="template-name">{t.emoji} {t.name}</span>
             </div>
           ))}
-        </div>
-
-        <div className="load-url-section">
-          {!showUrlInput ? (
-            <button className="btn-secondary" onClick={() => setShowUrlInput(true)}>
-              🌐 Tải thêm hình từ Internet
-            </button>
-          ) : (
-            <div className="url-input-group">
-              <input
-                type="text"
-                placeholder="Dán URL hình ảnh vào đây..."
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLoadUrl()}
-                autoFocus
-              />
-              <button className="btn-primary" onClick={handleLoadUrl}>Tải</button>
-              <button className="btn-secondary" onClick={() => { setShowUrlInput(false); setUrlError(''); }}>
-                Huỷ
-              </button>
-            </div>
-          )}
-          {urlError && <p className="url-error">{urlError}</p>}
-          {showUrlInput && (
-            <p className="url-hint">
-              💡 Mẹo: Tìm "coloring page outline" trên Google, chuột phải &gt; Copy Image Address rồi dán vào đây.
-            </p>
-          )}
         </div>
       </div>
     );

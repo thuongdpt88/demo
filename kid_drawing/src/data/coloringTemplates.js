@@ -333,4 +333,230 @@ export const coloringTemplates = [
       '<circle cx="368" cy="375" r="8" fill="none"/>'
     ),
   },
+  // 21. Castle
+  {
+    id: 21, name: 'Lâu đài', emoji: '🏰',
+    svg: S(
+      '<rect x="100" y="200" width="300" height="250"/>' +
+      '<rect x="70" y="150" width="60" height="300"/>' +
+      '<rect x="370" y="150" width="60" height="300"/>' +
+      '<rect x="70" y="130" width="18" height="25"/>' +
+      '<rect x="96" y="130" width="18" height="25"/>' +
+      '<rect x="370" y="130" width="18" height="25"/>' +
+      '<rect x="396" y="130" width="18" height="25"/>' +
+      '<polygon points="200,200 250,100 300,200"/>' +
+      '<rect x="215" y="340" width="70" height="110"/>' +
+      '<path d="M215,340 Q250,310 285,340" fill="none" stroke-width="3"/>' +
+      '<rect x="125" y="260" width="50" height="60"/>' +
+      '<line x1="150" y1="260" x2="150" y2="320" fill="none"/>' +
+      '<line x1="125" y1="290" x2="175" y2="290" fill="none"/>' +
+      '<rect x="325" y="260" width="50" height="60"/>' +
+      '<line x1="350" y1="260" x2="350" y2="320" fill="none"/>' +
+      '<line x1="325" y1="290" x2="375" y2="290" fill="none"/>' +
+      '<circle cx="250" cy="155" r="10" fill="none"/>' +
+      '<polygon points="240,100 250,70 260,100" fill="none"/>' +
+      '<path d="M40,455 L460,455" stroke-width="5" fill="none"/>'
+    ),
+  },
+  // 22. Dragon
+  {
+    id: 22, name: 'Rồng', emoji: '🐉',
+    svg: S(
+      '<ellipse cx="260" cy="300" rx="130" ry="90"/>' +
+      '<circle cx="155" cy="210" r="72"/>' +
+      '<polygon points="95,180 55,120 120,165"/>' +
+      '<polygon points="170,148 140,82 195,135"/>' +
+      '<circle cx="130" cy="198" r="14"/><circle cx="134" cy="195" r="6" fill="black" stroke="none"/>' +
+      '<circle cx="178" cy="198" r="14"/><circle cx="174" cy="195" r="6" fill="black" stroke="none"/>' +
+      '<path d="M120,245 L100,260 L120,255 L105,272 L128,262 L115,280 L140,265" fill="none" stroke-width="3"/>' +
+      '<path d="M390,300 Q430,280 445,310 Q460,340 430,345 Q448,365 420,370" fill="none" stroke-width="5"/>' +
+      '<path d="M300,230 Q340,200 310,240" fill="none"/>' +
+      '<path d="M330,240 Q360,210 340,255" fill="none"/>' +
+      '<ellipse cx="210" cy="380" rx="32" ry="18"/>' +
+      '<ellipse cx="310" cy="380" rx="32" ry="18"/>' +
+      '<path d="M200,240 Q230,210 260,240" fill="none" stroke-width="3"/>' +
+      '<path d="M250,225 Q280,195 310,225" fill="none" stroke-width="3"/>' +
+      '<ellipse cx="260" cy="310" rx="55" ry="35" fill="none"/>'
+    ),
+  },
+  // 23. Dinosaur
+  {
+    id: 23, name: 'Khủng long', emoji: '🦕',
+    svg: S(
+      '<ellipse cx="280" cy="300" rx="120" ry="80"/>' +
+      '<path d="M160,300 Q130,250 100,210 Q80,180 110,170 Q140,165 155,200 Q160,230 170,260" fill="none" stroke-width="4"/>' +
+      '<circle cx="115" cy="180" r="30"/>' +
+      '<circle cx="105" cy="172" r="8"/><circle cx="107" cy="170" r="4" fill="black" stroke="none"/>' +
+      '<path d="M85,195 L70,198" fill="none" stroke-width="2"/>' +
+      '<path d="M400,300 Q430,290 440,310 Q455,340 430,350 Q445,365 420,375 Q435,390 410,398" fill="none" stroke-width="5"/>' +
+      '<path d="M240,380 L230,440 L255,440 L250,380" fill="none" stroke-width="4"/>' +
+      '<path d="M310,380 L300,440 L325,440 L320,380" fill="none" stroke-width="4"/>' +
+      '<path d="M250,220 L245,200 L260,220 L262,195 L275,218 L280,192 L288,220" fill="none" stroke-width="3"/>' +
+      '<ellipse cx="280" cy="310" rx="50" ry="30" fill="none"/>' +
+      '<path d="M50,455 L450,455" stroke-width="4" fill="none"/>'
+    ),
+  },
+  // 24. Unicorn
+  {
+    id: 24, name: 'Kỳ lân', emoji: '🦄',
+    svg: S(
+      '<ellipse cx="250" cy="310" rx="120" ry="80"/>' +
+      '<circle cx="160" cy="220" r="62"/>' +
+      '<polygon points="168,158 180,70 192,155"/>' +
+      '<circle cx="140" cy="210" r="10"/><circle cx="142" cy="208" r="5" fill="black" stroke="none"/>' +
+      '<path d="M125,238 Q145,255 165,238" fill="none" stroke-width="2"/>' +
+      '<path d="M100,228 Q85,245 105,255" fill="none" stroke-width="5"/>' +
+      '<path d="M190,380 L180,445 L200,445 L195,380" fill="none" stroke-width="4"/>' +
+      '<path d="M310,380 L300,445 L320,445 L315,380" fill="none" stroke-width="4"/>' +
+      '<path d="M370,310 Q400,290 410,320 Q425,355 395,365 Q410,380 385,390" fill="none" stroke-width="5"/>' +
+      '<path d="M360,260 Q380,230 370,260" fill="none" stroke-width="2"/>' +
+      '<path d="M340,250 Q355,220 350,255" fill="none" stroke-width="2"/>' +
+      '<circle cx="178" cy="128" r="5" fill="none" stroke-width="2"/>' +
+      '<path d="M50,455 L450,455" stroke-width="4" fill="none"/>'
+    ),
+  },
+  // 25. Underwater scene
+  {
+    id: 25, name: 'Đại dương', emoji: '🌊',
+    svg: S(
+      '<ellipse cx="165" cy="260" rx="80" ry="52"/>' +
+      '<circle cx="118" cy="242" r="10"/><circle cx="121" cy="240" r="5" fill="black" stroke="none"/>' +
+      '<polygon points="245,260 305,220 305,300"/>' +
+      '<ellipse cx="350" cy="180" rx="55" ry="35"/>' +
+      '<circle cx="320" cy="172" r="7"/><circle cx="322" cy="170" r="3" fill="black" stroke="none"/>' +
+      '<polygon points="405,180 440,155 440,205"/>' +
+      '<path d="M200,400 Q220,370 240,400 Q260,430 280,400 Q300,370 320,400" fill="none" stroke-width="3"/>' +
+      '<rect x="150" y="400" width="12" height="80" rx="3"/>' +
+      '<ellipse cx="125" cy="395" rx="35" ry="12" transform="rotate(-20,125,395)"/>' +
+      '<ellipse cx="175" cy="390" rx="30" ry="10" transform="rotate(15,175,390)"/>' +
+      '<rect x="350" y="415" width="10" height="65" rx="3"/>' +
+      '<ellipse cx="330" cy="408" rx="28" ry="10" transform="rotate(-15,330,408)"/>' +
+      '<ellipse cx="372" cy="405" rx="25" ry="9" transform="rotate(20,372,405)"/>' +
+      '<circle cx="85" cy="350" r="14" fill="none"/>' +
+      '<circle cx="420" cy="310" r="10" fill="none"/>' +
+      '<circle cx="250" cy="140" r="8" fill="none"/>' +
+      '<path d="M30,100 Q100,70 170,100 Q240,130 310,100 Q380,70 450,100" fill="none" stroke-width="3"/>'
+    ),
+  },
+  // 26. Pirate ship
+  {
+    id: 26, name: 'Tàu cướp biển', emoji: '🏴‍☠️',
+    svg: S(
+      '<path d="M60,330 L100,420 L400,420 L440,330 Z"/>' +
+      '<rect x="245" y="110" width="10" height="220"/>' +
+      '<polygon points="258,120 258,250 400,250"/>' +
+      '<polygon points="242,130 242,240 130,240"/>' +
+      '<circle cx="330" cy="190" r="28" fill="none"/>' +
+      '<line x1="330" y1="162" x2="330" y2="218" fill="none" stroke-width="2"/>' +
+      '<line x1="302" y1="190" x2="358" y2="190" fill="none" stroke-width="2"/>' +
+      '<circle cx="140" cy="360" r="16" fill="none"/>' +
+      '<circle cx="250" cy="370" r="16" fill="none"/>' +
+      '<circle cx="360" cy="360" r="16" fill="none"/>' +
+      '<path d="M30,435 Q130,460 250,435 Q370,410 470,435" fill="none" stroke-width="4"/>' +
+      '<path d="M30,455 Q130,475 250,455 Q370,430 470,455" fill="none" stroke-width="3"/>' +
+      '<polygon points="245,100 250,70 255,100" fill="#222"/>'
+    ),
+  },
+  // 27. Owl
+  {
+    id: 27, name: 'Cú mèo', emoji: '🦉',
+    svg: S(
+      '<ellipse cx="250" cy="290" rx="110" ry="120"/>' +
+      '<circle cx="200" cy="240" r="45"/>' +
+      '<circle cx="300" cy="240" r="45"/>' +
+      '<circle cx="200" cy="240" r="22"/><circle cx="205" cy="237" r="9" fill="black" stroke="none"/>' +
+      '<circle cx="300" cy="240" r="22"/><circle cx="295" cy="237" r="9" fill="black" stroke="none"/>' +
+      '<polygon points="240,270 250,295 260,270"/>' +
+      '<polygon points="170,190 140,120 215,195"/>' +
+      '<polygon points="330,190 360,120 285,195"/>' +
+      '<path d="M210,330 Q250,365 290,330" fill="none" stroke-width="3"/>' +
+      '<path d="M180,300 Q165,340 185,360" fill="none" stroke-width="2"/>' +
+      '<path d="M320,300 Q335,340 315,360" fill="none" stroke-width="2"/>' +
+      '<path d="M140,350 Q120,380 150,390" fill="none" stroke-width="4"/>' +
+      '<path d="M360,350 Q380,380 350,390" fill="none" stroke-width="4"/>' +
+      '<line x1="225" y1="415" x2="210" y2="450" fill="none" stroke-width="3"/>' +
+      '<line x1="225" y1="415" x2="240" y2="450" fill="none" stroke-width="3"/>' +
+      '<line x1="275" y1="415" x2="260" y2="450" fill="none" stroke-width="3"/>' +
+      '<line x1="275" y1="415" x2="290" y2="450" fill="none" stroke-width="3"/>'
+    ),
+  },
+  // 28. Robot
+  {
+    id: 28, name: 'Robot', emoji: '🤖',
+    svg: S(
+      '<rect x="160" y="190" width="180" height="150" rx="12"/>' +
+      '<rect x="180" y="80" width="140" height="110" rx="14"/>' +
+      '<rect x="200" y="105" width="35" height="30" rx="4"/>' +
+      '<rect x="265" y="105" width="35" height="30" rx="4"/>' +
+      '<circle cx="217" cy="120" r="8" fill="black" stroke="none"/>' +
+      '<circle cx="282" cy="120" r="8" fill="black" stroke="none"/>' +
+      '<rect x="225" y="148" width="50" height="15" rx="4"/>' +
+      '<line x1="235" y1="148" x2="235" y2="163" fill="none" stroke-width="2"/>' +
+      '<line x1="250" y1="148" x2="250" y2="163" fill="none" stroke-width="2"/>' +
+      '<line x1="265" y1="148" x2="265" y2="163" fill="none" stroke-width="2"/>' +
+      '<line x1="250" y1="68" x2="250" y2="80" fill="none" stroke-width="3"/>' +
+      '<circle cx="250" cy="62" r="8"/>' +
+      '<rect x="120" y="220" width="40" height="20" rx="6"/>' +
+      '<rect x="340" y="220" width="40" height="20" rx="6"/>' +
+      '<rect x="120" y="250" width="40" height="60" rx="8"/>' +
+      '<rect x="340" y="250" width="40" height="60" rx="8"/>' +
+      '<circle cx="215" cy="265" r="18" fill="none"/>' +
+      '<circle cx="285" cy="265" r="18" fill="none"/>' +
+      '<rect x="235" y="265" width="30" height="50" rx="4" fill="none"/>' +
+      '<rect x="190" y="345" width="50" height="85" rx="8"/>' +
+      '<rect x="260" y="345" width="50" height="85" rx="8"/>' +
+      '<rect x="180" y="425" width="70" height="20" rx="6"/>' +
+      '<rect x="250" y="425" width="70" height="20" rx="6"/>'
+    ),
+  },
+  // 29. Farm scene
+  {
+    id: 29, name: 'Nông trại', emoji: '🌾',
+    svg: S(
+      '<rect x="60" y="250" width="180" height="140"/>' +
+      '<polygon points="40,255 150,140 260,255"/>' +
+      '<rect x="120" y="310" width="50" height="80"/>' +
+      '<rect x="85" y="280" width="40" height="35"/>' +
+      '<line x1="105" y1="280" x2="105" y2="315" fill="none"/>' +
+      '<line x1="85" y1="298" x2="125" y2="298" fill="none"/>' +
+      '<circle cx="145" cy="398" r="6" fill="#222"/>' +
+      '<rect x="310" y="200" width="20" height="195" rx="3"/>' +
+      '<polygon points="265,205 320,120 375,205"/>' +
+      '<polygon points="280,255 320,175 360,255"/>' +
+      '<polygon points="290,300 320,230 350,300"/>' +
+      '<path d="M380,330 Q420,310 440,340 Q460,370 430,380" fill="none" stroke-width="4"/>' +
+      '<ellipse cx="430" cy="360" rx="42" ry="30"/>' +
+      '<circle cx="415" cy="350" r="5"/><circle cx="417" cy="348" r="2" fill="black" stroke="none"/>' +
+      '<path d="M395,372 L388,396" fill="none" stroke-width="3"/>' +
+      '<path d="M430,378 L427,396" fill="none" stroke-width="3"/>' +
+      '<path d="M460,370 L465,390" fill="none" stroke-width="3"/>' +
+      '<path d="M40,400 L460,400" stroke-width="4" fill="none"/>' +
+      '<circle cx="155" cy="180" r="8" fill="none"/>'
+    ),
+  },
+  // 30. Space scene
+  {
+    id: 30, name: 'Vũ trụ', emoji: '🚀',
+    svg: S(
+      '<rect x="195" y="150" width="80" height="175" rx="10"/>' +
+      '<path d="M195,155 Q235,55 275,155"/>' +
+      '<polygon points="190,325 150,390 195,330"/>' +
+      '<polygon points="280,325 320,390 275,330"/>' +
+      '<circle cx="235" cy="220" r="22"/><circle cx="235" cy="220" r="12" fill="none"/>' +
+      '<polygon points="210,328 235,395 260,328"/>' +
+      '<circle cx="100" cy="120" r="55"/>' +
+      '<circle cx="80" cy="108" r="15" fill="none"/>' +
+      '<circle cx="120" cy="140" r="10" fill="none"/>' +
+      '<circle cx="90" cy="135" r="7" fill="none"/>' +
+      '<circle cx="380" cy="200" r="42"/>' +
+      '<ellipse cx="380" cy="200" rx="70" ry="18" fill="none"/>' +
+      '<polygon points="420,380 430,365 440,380 432,370 444,358 434,362 438,345" fill="none" stroke-width="2"/>' +
+      '<polygon points="70,320 78,308 86,320 80,312 90,302 82,305 85,290" fill="none" stroke-width="2"/>' +
+      '<polygon points="320,80 326,70 332,80 328,74 334,66 328,68 330,58" fill="none" stroke-width="2"/>' +
+      '<circle cx="160" cy="350" r="4" fill="#222"/>' +
+      '<circle cx="300" cy="420" r="3" fill="#222"/>' +
+      '<circle cx="450" cy="100" r="3" fill="#222"/>' +
+      '<circle cx="50" cy="250" r="3" fill="#222"/>'
+    ),
+  },
 ];

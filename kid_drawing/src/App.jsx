@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Switch, Link, useLocation, useHistory } from 'react-router-dom';
-import HomePage from './pages/HomePage';
+import { BrowserRouter as Router, Route, Switch, Link, Redirect, useLocation, useHistory } from 'react-router-dom';
 import DrawPage from './pages/DrawPage';
 import ColorPage from './pages/ColorPage';
 import DashboardPage from './pages/DashboardPage';
@@ -102,18 +101,17 @@ const NavBar = ({ isParent, onLogout }) => {
       <nav className="top-nav">
         <Link to="/" className="nav-brand">🎨 Kid Drawing</Link>
         <div className="nav-links">
-          <Link to="/" className={isActive('/')}>🏠 Home</Link>
           {!isParent && (
             <>
-              <Link to="/draw" className={isActive('/draw')}>✏️ Draw</Link>
-              <Link to="/color" className={isActive('/color')}>🖌️ Color</Link>
-              <Link to="/dashboard" className={isActive('/dashboard')}>📊 Dashboard</Link>
+              <Link to="/draw" className={isActive('/draw')}>✏️ Vẽ</Link>
+              <Link to="/color" className={isActive('/color')}>🖌️ Tô màu</Link>
+              <Link to="/dashboard" className={isActive('/dashboard')}>📊 Bộ sưu tập</Link>
             </>
           )}
           {isParent && (
             <>
-              <Link to="/parent-dashboard" className={isActive('/parent-dashboard')}>👨‍👩‍👧 Phụ huynh</Link>
-              <Link to="/profile" className={isActive('/profile')}>👤 Profile</Link>
+              <Link to="/parent-dashboard" className={isActive('/parent-dashboard')}>👨‍👩‍👧 Quản lý</Link>
+              <Link to="/profile" className={isActive('/profile')}>👤 Hồ sơ</Link>
             </>
           )}
         </div>
@@ -183,11 +181,9 @@ const App = () => {
         <NavBar isParent={isParent} onLogout={handleLogout} />
         <div className="page">
           <Switch>
-            <Route
-              path="/"
-              exact
-              render={() => <HomePage isParent={isParent} />}
-            />
+            <Route path="/" exact>
+              {isParent ? <Redirect to="/parent-dashboard" /> : <Redirect to="/draw" />}
+            </Route>
             {!isParent && <Route path="/draw" component={DrawPage} />}
             {!isParent && <Route path="/color" component={ColorPage} />}
             {!isParent && <Route path="/dashboard" component={DashboardPage} />}

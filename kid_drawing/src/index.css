@@ -209,7 +209,6 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 820px;
 }
 
 .draw-header h2 {
@@ -1016,12 +1015,12 @@ body {
 
 .fullscreen-canvas-mode .coloring-canvas {
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 160px);
 }
 
 .fullscreen-canvas-mode .drawing-canvas {
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 160px);
 }
 
 .fullscreen-canvas-mode .canvas-container {
@@ -1033,6 +1032,19 @@ body {
 
 .fullscreen-canvas-mode .toolbar {
   max-width: none;
+}
+
+.fullscreen-canvas-mode .challenge-banner {
+  margin: 0 16px;
+}
+
+.fullscreen-back-btn {
+  background: linear-gradient(135deg, #ef4444, #f97316) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  padding: 10px 22px !important;
+  font-size: 0.95rem !important;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
 }
 
 /* ===== Draw Actions ===== */
@@ -1494,7 +1506,7 @@ body {
 
   .fullscreen-canvas-mode .coloring-canvas,
   .fullscreen-canvas-mode .drawing-canvas {
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 200px);
     max-width: calc(100vw - 16px);
   }
 
@@ -1605,7 +1617,11 @@ body {
 
   .fullscreen-canvas-mode .coloring-canvas,
   .fullscreen-canvas-mode .drawing-canvas {
-    max-height: calc(100vh - 140px);
+    max-height: calc(100vh - 120px);
+  }
+
+  .fullscreen-canvas-mode .challenge-banner {
+    padding: 6px 12px;
   }
 
   .coloring-palette {
@@ -2006,4 +2022,332 @@ body {
     gap: 8px;
     font-size: 0.9rem;
   }
+}
+
+/* ===== Mode Picker ===== */
+.mode-picker {
+  text-align: center;
+  padding: 40px 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.mode-picker h2 {
+  font-size: 2rem;
+  margin-bottom: 4px;
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mode-picker-subtitle {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin-bottom: 32px;
+}
+
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.mode-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.mode-card-free::after {
+  background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05));
+}
+
+.mode-card-challenge::after {
+  background: linear-gradient(135deg, rgba(245,158,11,0.05), rgba(239,68,68,0.05));
+}
+
+.mode-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(99,102,241,0.15);
+}
+
+.mode-card:hover::after {
+  opacity: 1;
+}
+
+.mode-card-free:hover {
+  border-color: #818cf8;
+}
+
+.mode-card-challenge:hover {
+  border-color: #f59e0b;
+}
+
+.mode-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.mode-icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 16px;
+  animation: pulse 2s infinite;
+}
+
+.mode-card h3 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+  color: #1e293b;
+}
+
+.mode-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* ===== Challenge Banner ===== */
+.challenge-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #fef3c7, #fff7ed);
+  border: 2px solid #fde68a;
+  border-radius: 16px;
+  padding: 14px 20px;
+  width: 100%;
+  animation: slideDown 0.4s ease;
+}
+
+.challenge-emoji {
+  font-size: 2.5rem;
+  animation: pulse 1.5s infinite;
+}
+
+.challenge-info {
+  flex: 1;
+}
+
+.challenge-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #92400e;
+}
+
+.challenge-info p {
+  margin: 2px 0 0;
+  color: #a16207;
+  font-size: 0.9rem;
+}
+
+.challenge-new-btn {
+  white-space: nowrap;
+  border-color: #fbbf24 !important;
+  color: #92400e !important;
+}
+
+.challenge-new-btn:hover {
+  background: #fef3c7 !important;
+}
+
+/* ===== Page wider for draw ===== */
+.page:has(.draw-page),
+.page:has(.color-page-coloring) {
+  max-width: none;
+  padding: 16px 24px;
+}
+
+/* ===== Responsive mode picker ===== */
+@media (max-width: 640px) {
+  .mode-picker {
+    padding: 24px 8px;
+  }
+  .mode-picker h2 {
+    font-size: 1.5rem;
+  }
+  .mode-cards {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .mode-card {
+    padding: 28px 16px;
+  }
+  .mode-icon {
+    font-size: 3rem;
+  }
+  .challenge-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  .challenge-emoji {
+    font-size: 2rem;
+  }
+}
+
+/* ===== Filter Bar ===== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #f0f4ff;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.filter-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #555;
+  margin-right: 4px;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 2px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.filter-chip:hover {
+  border-color: #7c3aed;
+  background: #f5f0ff;
+}
+
+.filter-chip.active {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #7c3aed;
+}
+
+/* ===== Zoom Modal ===== */
+.zoom-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.zoom-modal {
+  background: #fff;
+  border-radius: 16px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: zoomIn 0.25s ease-out;
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.zoom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.zoom-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.zoom-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+  padding: 4px 8px;
+  border-radius: 8px;
+  line-height: 1;
+}
+
+.zoom-close-btn:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.zoom-image-wrapper {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  max-height: 65vh;
+}
+
+.zoom-image-wrapper img {
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.zoom-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.zoom-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.zoom-rating {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zoom-rating span {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* ===== Drawing Owner Badge ===== */
+.drawing-owner-badge {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 6px;
+  font-style: italic;
 }

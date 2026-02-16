@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
 import { useDrawingStore } from '../store/drawingStore';
@@ -8,6 +8,8 @@ const DashboardPage = () => {
     const { user, children } = useUserStore();
     const { completedDrawings, setEditingDrawing } = useDrawingStore();
     const history = useHistory();
+    const [filterChildId, setFilterChildId] = useState('mine'); // 'mine', 'all', or a child id
+    const [zoomedDrawing, setZoomedDrawing] = useState(null);
 
     // This child's drawings
     const myDrawings = completedDrawings.filter(d => d.childId === user?.id);
@@ -16,6 +18,13 @@ const DashboardPage = () => {
         ? (ratedDrawings.reduce((sum, d) => sum + d.rating, 0) / ratedDrawings.length).toFixed(1)
         : '0.0';
     const totalStars = myDrawings.reduce((sum, d) => sum + (d.rating || 0), 0);
+
+    // Filtered drawings based on filter
+    const displayDrawings = filterChildId === 'mine'
+        ? myDrawings
+        : filterChildId === 'all'
+            ? completedDrawings
+            : completedDrawings.filter(d => String(d.childId) === String(filterChildId));
 
     // Ranking: all children sorted by total stars
     const ranking = children.map(child => {
@@ -34,13 +43,15 @@ const DashboardPage = () => {
         }
     };
 
+    const isMine = (drawing) => String(drawing.childId) === String(user?.id);
+
     return (
         <div className="dashboard">
             <h2>📊 Bộ sưu tập của {user?.name || 'bé'}</h2>
 
             <div className="stats-overview">
                 <div className="stat-item">
-                    <h3>🎨 Tổng bài</h3>
+                    <h3>🎨 Bài của tôi</h3>
                     <p>{myDrawings.length}</p>
                 </div>
                 <div className="stat-item">
@@ -76,10 +87,39 @@ const DashboardPage = () => {
                 </div>
             )}
 
-            {myDrawings.length > 0 ? (
+            {/* Filter bar */}
+            {children.length > 1 && (
+                <div className="filter-bar" style={{ marginBottom: '16px' }}>
+                    <span className="filter-label">🔍 Xem bài:</span>
+                    <button
+                        className={`filter-chip ${filterChildId === 'mine' ? 'active' : ''}`}
+                        onClick={() => setFilterChildId('mine')}
+                    >
+                        📌 Của tôi
+                    </button>
+                    <button
+                        className={`filter-chip ${filterChildId === 'all' ? 'active' : ''}`}
+                        onClick={() => setFilterChildId('all')}
+                    >
+                        👥 Tất cả
+                    </button>
+                    {children.filter(c => c.id !== user?.id).map(child => (
+                        <button
+                            key={child.id}
+                            className={`filter-chip ${String(filterChildId) === String(child.id) ? 'active' : ''}`}
+                            onClick={() => setFilterChildId(child.id)}
+                        >
+                            {child.avatar} {child.name}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {displayDrawings.length > 0 ? (
                 <div className="drawing-grid">
-                    {myDrawings.map((drawing) => {
+                    {displayDrawings.map((drawing) => {
                         const isRated = drawing.rating > 0;
+                        const mine = isMine(drawing);
                         return (
                             <div key={drawing.id} className={`drawing-card ${isRated ? 'drawing-card-rated' : ''}`}>
                                 <div className="drawing-card-status">
@@ -88,7 +128,14 @@ const DashboardPage = () => {
                                         : <span className="status-badge status-pending">📝 Chờ chấm</span>
                                     }
                                 </div>
-                                <img src={drawing.imageUrl} alt={drawing.title} className="drawing-image" />
+                                <img
+                                    src={drawing.imageUrl}
+                                    alt={drawing.title}
+                                    className="drawing-image"
+                                    onClick={() => setZoomedDrawing(drawing)}
+                                    style={{ cursor: 'zoom-in' }}
+                                    title="Nhấn để phóng to"
+                                />
                                 <h3 className="drawing-title">{drawing.title}</h3>
                                 <StarRating
                                     rating={drawing.rating || 0}
@@ -97,8 +144,9 @@ const DashboardPage = () => {
                                 <p className="drawing-status">
                                     {drawing.type === 'coloring' ? '🖌️ Tô màu' : '✏️ Vẽ tự do'}
                                     {isRated && ` • ${drawing.rating}⭐`}
+                                    {!mine && drawing.childName && ` • ${drawing.childName}`}
                                 </p>
-                                {!isRated && (
+                                {mine && !isRated && (
                                     <button
                                         className="btn-secondary edit-drawing-btn"
                                         onClick={() => handleEdit(drawing)}
@@ -106,8 +154,13 @@ const DashboardPage = () => {
                                         ✏️ Chỉnh sửa
                                     </button>
                                 )}
-                                {isRated && (
+                                {mine && isRated && (
                                     <div className="drawing-locked">🔒 Không thể chỉnh sửa</div>
+                                )}
+                                {!mine && (
+                                    <div className="drawing-owner-badge">
+                                        👤 {drawing.childName || 'Bạn khác'}
+                                    </div>
                                 )}
                             </div>
                         );
@@ -116,7 +169,33 @@ const DashboardPage = () => {
             ) : (
                 <div className="empty-state">
                     <p className="empty-icon">🎨</p>
-                    <p>Chưa có bài vẽ nào! Đến <strong>Vẽ tự do</strong> hoặc <strong>Tô màu</strong> để tạo tác phẩm nhé!</p>
+                    <p>
+                        {filterChildId === 'mine'
+                            ? <>Chưa có bài vẽ nào! Đến <strong>Vẽ tự do</strong> hoặc <strong>Tô màu</strong> để tạo tác phẩm nhé!</>
+                            : 'Chưa có bài vẽ nào trong mục này.'}
+                    </p>
+                </div>
+            )}
+
+            {/* Zoom Modal */}
+            {zoomedDrawing && (
+                <div className="zoom-overlay" onClick={() => setZoomedDrawing(null)}>
+                    <div className="zoom-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="zoom-header">
+                            <h3>{zoomedDrawing.title}</h3>
+                            <button className="zoom-close-btn" onClick={() => setZoomedDrawing(null)}>✕</button>
+                        </div>
+                        <div className="zoom-image-wrapper">
+                            <img src={zoomedDrawing.imageUrl} alt={zoomedDrawing.title} />
+                        </div>
+                        <div className="zoom-footer">
+                            <div className="zoom-info">
+                                <span>{zoomedDrawing.type === 'coloring' ? '🖌️ Tô màu' : '✏️ Vẽ tự do'}</span>
+                                {zoomedDrawing.childName && <span> • {zoomedDrawing.childName}</span>}
+                                {zoomedDrawing.rating > 0 && <span> • {zoomedDrawing.rating}⭐</span>}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
