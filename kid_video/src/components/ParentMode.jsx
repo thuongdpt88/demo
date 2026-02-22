@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaLock, FaUnlock, FaPlus, FaTrash, FaEdit, FaTimes, FaYoutube, FaTv, FaCog, FaUsers, FaSave, FaUserShield, FaRedo, FaSearch, FaCheck, FaDownload, FaUpload } from 'react-icons/fa';
+import { FaLock, FaUnlock, FaPlus, FaTrash, FaEdit, FaTimes, FaYoutube, FaTv, FaCog, FaUsers, FaSave, FaUserShield, FaRedo, FaSearch, FaCheck, FaDownload, FaUpload, FaDatabase, FaArrowUp, FaArrowDown, FaFilter } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { useVideoStore, extractYouTubeId, getYouTubeThumbnail, categories } from '../store/videoStore';
 import './ParentMode.css';
@@ -212,6 +212,15 @@ function ParentMode({ inHeader = false }) {
   const [editingVideo, setEditingVideo] = useState(null);
   const [saveMessage, setSaveMessage] = useState('');
 
+  // Bulk add options for search mode
+  const [bulkAgeGroup, setBulkAgeGroup] = useState('all');
+  const [bulkCategory, setBulkCategory] = useState('entertainment');
+
+  // Video table filter states
+  const [videoFilterCategory, setVideoFilterCategory] = useState('all');
+  const [videoFilterAge, setVideoFilterAge] = useState('all');
+  const [videoSearch, setVideoSearch] = useState('');
+
   // States for YouTube search
   const [searchMode, setSearchMode] = useState('url'); // 'url' or 'search'
   const [selectedChannel, setSelectedChannel] = useState('');
@@ -225,6 +234,25 @@ function ParentMode({ inHeader = false }) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const childUsers = users.filter(u => u.type === 'child');
+
+  // Filtered + searched videos for table
+  const filteredTableVideos = useMemo(() => {
+    let list = [...videos];
+    if (videoFilterCategory !== 'all') {
+      list = list.filter(v => v.category === videoFilterCategory);
+    }
+    if (videoFilterAge !== 'all') {
+      list = list.filter(v => v.ageGroup === videoFilterAge);
+    }
+    if (videoSearch.trim()) {
+      const q = videoSearch.toLowerCase();
+      list = list.filter(v =>
+        v.title?.toLowerCase().includes(q) ||
+        v.channel?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [videos, videoFilterCategory, videoFilterAge, videoSearch]);
 
   // Export data to file
   const handleExportData = () => {
@@ -429,17 +457,15 @@ function ParentMode({ inHeader = false }) {
   const handleAddSelectedVideos = async () => {
     if (selectedVideos.length === 0) return;
 
-    const channel = selectedChannel ? channels.find(c => c.id === selectedChannel) : null;
-
     try {
       for (const video of selectedVideos) {
         await addVideo({
           url: video.url,
           title: video.title,
-          channel: video.channel || channel?.name || 'YouTube',
+          channel: video.channel || 'YouTube',
           thumbnail: video.thumbnail,
-          ageGroup: channel?.ageGroup || 'all',
-          category: channel?.category || 'entertainment'
+          ageGroup: bulkAgeGroup,
+          category: bulkCategory
         });
       }
       setSaveMessage(`✅ Đã thêm ${selectedVideos.length} video!`);
@@ -451,6 +477,35 @@ function ParentMode({ inHeader = false }) {
       setSearchMode('url');
     } catch (error) {
       setSaveMessage('❌ Lỗi khi lưu!');
+    }
+  };
+
+  // Move video in list
+  const handleMoveVideo = async (video, direction) => {
+    const idx = videos.findIndex(v => v.id === video.id);
+    if (direction === 'up' && idx > 0) {
+      // Swap ageGroup/category with prior — or just update order hint
+      // Simple approach: swap the two videos' sort order
+      const other = videos[idx - 1];
+      await updateVideo(video.id, { sortOrder: (other.sortOrder ?? idx - 1) });
+      await updateVideo(other.id, { sortOrder: (video.sortOrder ?? idx) });
+    } else if (direction === 'down' && idx < videos.length - 1) {
+      const other = videos[idx + 1];
+      await updateVideo(video.id, { sortOrder: (other.sortOrder ?? idx + 1) });
+      await updateVideo(other.id, { sortOrder: (video.sortOrder ?? idx) });
+    }
+  };
+
+  // Batch update category/ageGroup
+  const handleBatchUpdateVideos = async (videoIds, field, value) => {
+    try {
+      for (const id of videoIds) {
+        await updateVideo(id, { [field]: value });
+      }
+      setSaveMessage(`✅ Đã cập nhật ${videoIds.length} video!`);
+      setTimeout(() => setSaveMessage(''), 2000);
+    } catch (error) {
+      setSaveMessage('❌ Lỗi khi cập nhật!');
     }
   };
 
@@ -744,6 +799,12 @@ function ParentMode({ inHeader = false }) {
                   >
                     <FaUsers /> <span className="tab-text">Bé</span> <span className="tab-count">({childUsers.length})</span>
                   </button>
+                  <button
+                    className={`tab-btn ${activeTab === 'backup' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('backup')}
+                  >
+                    <FaDatabase /> <span className="tab-text">Sao lưu</span>
+                  </button>
                 </div>
 
                 {/* Save Message */}
@@ -758,22 +819,86 @@ function ParentMode({ inHeader = false }) {
                       <button className="add-btn" onClick={() => setShowAddModal(true)}>
                         <FaPlus /> Thêm video
                       </button>
-                      <div className="item-list">
-                        {videos.map((video) => (
-                          <div key={video.id} className="list-item">
-                            <img src={video.thumbnail} alt={video.title} className="item-thumb" />
-                            <div className="item-info">
-                              <span className="item-title">{video.title}</span>
-                              <span className="item-meta">
-                                {video.channel} • {video.ageGroup} • {categories.find(c => c.id === video.category)?.icon || '🎬'}
-                              </span>
+
+                      {/* Filter Bar */}
+                      <div className="video-filter-bar">
+                        <div className="filter-search">
+                          <FaSearch className="filter-search-icon" />
+                          <input
+                            type="text"
+                            value={videoSearch}
+                            onChange={(e) => setVideoSearch(e.target.value)}
+                            placeholder="Tìm video..."
+                            className="filter-search-input"
+                          />
+                        </div>
+                        <select
+                          value={videoFilterCategory}
+                          onChange={(e) => setVideoFilterCategory(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">Tất cả chủ đề</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={videoFilterAge}
+                          onChange={(e) => setVideoFilterAge(e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">Mọi tuổi</option>
+                          <option value="0-3">0-3 tuổi</option>
+                          <option value="3-6">3-6 tuổi</option>
+                          <option value="6-9">6-9 tuổi</option>
+                          <option value="all">Chung</option>
+                        </select>
+                      </div>
+
+                      {/* Video count */}
+                      <div className="video-filter-info">
+                        <span>Hiển thị {filteredTableVideos.length}/{videos.length} video</span>
+                      </div>
+
+                      {/* Video Table */}
+                      <div className="video-table">
+                        {filteredTableVideos.map((video, idx) => (
+                          <div key={video.id} className="video-table-row">
+                            <div className="video-table-order">
+                              <button
+                                className="move-btn"
+                                onClick={() => handleMoveVideo(video, 'up')}
+                                disabled={idx === 0}
+                                title="Di chuyển lên"
+                              >
+                                <FaArrowUp />
+                              </button>
+                              <button
+                                className="move-btn"
+                                onClick={() => handleMoveVideo(video, 'down')}
+                                disabled={idx === filteredTableVideos.length - 1}
+                                title="Di chuyển xuống"
+                              >
+                                <FaArrowDown />
+                              </button>
                             </div>
-                            <button className="edit-btn" onClick={() => setEditingVideo(video)}>
-                              ✏️
-                            </button>
-                            <button className="delete-btn" onClick={() => deleteVideo(video.id)}>
-                              🗑️
-                            </button>
+                            <img src={video.thumbnail} alt={video.title} className="video-table-thumb" />
+                            <div className="video-table-info">
+                              <span className="video-table-title">{video.title}</span>
+                              <div className="video-table-tags">
+                                <span className="tag tag-channel">{video.channel}</span>
+                                <span className="tag tag-age">{video.ageGroup}</span>
+                                <span className="tag tag-category">{categories.find(c => c.id === video.category)?.icon || '🎬'} {categories.find(c => c.id === video.category)?.name || video.category}</span>
+                              </div>
+                            </div>
+                            <div className="video-table-actions">
+                              <button className="edit-btn" onClick={() => setEditingVideo(video)} title="Sửa">
+                                ✏️
+                              </button>
+                              <button className="delete-btn" onClick={() => deleteVideo(video.id)} title="Xoá">
+                                🗑️
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -825,6 +950,44 @@ function ParentMode({ inHeader = false }) {
                         ))}
                       </div>
                     </>
+                  )}
+
+                  {activeTab === 'backup' && (
+                    <div className="backup-section">
+                      <div className="backup-card">
+                        <div className="backup-card-icon">📤</div>
+                        <h4>Xuất dữ liệu</h4>
+                        <p>Tải xuống toàn bộ dữ liệu (video, kênh, người dùng, cài đặt) dưới dạng file JSON.</p>
+                        <button className="export-btn backup-action-btn" onClick={handleExportData}>
+                          <FaDownload /> Xuất file JSON
+                        </button>
+                      </div>
+                      <div className="backup-card">
+                        <div className="backup-card-icon">📥</div>
+                        <h4>Nhập dữ liệu</h4>
+                        <p>Khôi phục dữ liệu từ file JSON đã xuất trước đó. Dữ liệu hiện tại sẽ được gộp thêm.</p>
+                        <label className="import-btn backup-action-btn">
+                          <FaUpload /> Chọn file JSON
+                          <input type="file" accept=".json" onChange={handleImportData} hidden />
+                        </label>
+                      </div>
+                      <div className="backup-card backup-card-danger">
+                        <div className="backup-card-icon">🔄</div>
+                        <h4>Khôi phục mặc định</h4>
+                        <p>Xoá toàn bộ dữ liệu tuỳ chỉnh và khôi phục về trạng thái ban đầu.</p>
+                        <button className="reset-btn backup-action-btn" onClick={resetToDefaults}>
+                          <FaRedo /> Khôi phục mặc định
+                        </button>
+                      </div>
+                      <div className="backup-stats">
+                        <h4>📊 Thống kê dữ liệu</h4>
+                        <div className="stats-grid">
+                          <div className="stat-item"><span className="stat-value">{videos.length}</span><span className="stat-label">Video</span></div>
+                          <div className="stat-item"><span className="stat-value">{channels.length}</span><span className="stat-label">Kênh</span></div>
+                          <div className="stat-item"><span className="stat-value">{childUsers.length}</span><span className="stat-label">Người dùng</span></div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -1164,9 +1327,31 @@ function ParentMode({ inHeader = false }) {
                               )}
 
                               {selectedVideos.length > 0 && (
-                                <button className="submit-btn add-selected-btn" onClick={handleAddSelectedVideos}>
-                                  <FaPlus /> Thêm {selectedVideos.length} video đã chọn
-                                </button>
+                                <div className="bulk-classify-section">
+                                  <h4><FaFilter /> Phân loại trước khi thêm:</h4>
+                                  <div className="bulk-classify-options">
+                                    <div className="bulk-option">
+                                      <label>Độ tuổi:</label>
+                                      <select value={bulkAgeGroup} onChange={(e) => setBulkAgeGroup(e.target.value)}>
+                                        <option value="all">Mọi lứa tuổi</option>
+                                        <option value="0-3">0-3 tuổi</option>
+                                        <option value="3-6">3-6 tuổi</option>
+                                        <option value="6-9">6-9 tuổi</option>
+                                      </select>
+                                    </div>
+                                    <div className="bulk-option">
+                                      <label>Chủ đề:</label>
+                                      <select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)}>
+                                        {categories.map(cat => (
+                                          <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <button className="submit-btn add-selected-btn" onClick={handleAddSelectedVideos}>
+                                    <FaPlus /> Thêm {selectedVideos.length} video đã chọn
+                                  </button>
+                                </div>
                               )}
                             </>
                           )}
@@ -1289,9 +1474,31 @@ function ParentMode({ inHeader = false }) {
                                   )}
 
                                   {selectedVideos.length > 0 && (
-                                    <button className="submit-btn add-selected-btn" onClick={handleAddSelectedVideos}>
-                                      <FaPlus /> Thêm {selectedVideos.length} video đã chọn
-                                    </button>
+                                    <div className="bulk-classify-section">
+                                      <h4><FaFilter /> Phân loại trước khi thêm:</h4>
+                                      <div className="bulk-classify-options">
+                                        <div className="bulk-option">
+                                          <label>Độ tuổi:</label>
+                                          <select value={bulkAgeGroup} onChange={(e) => setBulkAgeGroup(e.target.value)}>
+                                            <option value="all">Mọi lứa tuổi</option>
+                                            <option value="0-3">0-3 tuổi</option>
+                                            <option value="3-6">3-6 tuổi</option>
+                                            <option value="6-9">6-9 tuổi</option>
+                                          </select>
+                                        </div>
+                                        <div className="bulk-option">
+                                          <label>Chủ đề:</label>
+                                          <select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)}>
+                                            {categories.map(cat => (
+                                              <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <button className="submit-btn add-selected-btn" onClick={handleAddSelectedVideos}>
+                                        <FaPlus /> Thêm {selectedVideos.length} video đã chọn
+                                      </button>
+                                    </div>
                                   )}
                                 </>
                               )}

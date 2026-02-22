@@ -6,6 +6,8 @@
 import { db } from './firebase';
 import { ref, get, set, push, remove, update, onValue } from 'firebase/database';
 
+const ROOT = 'kid_video';
+
 // Default data
 const DEFAULT_VIDEOS = [
   { id: "v001", url: "https://www.youtube.com/watch?v=XqZsoesa55w", title: "Baby Shark Dance - Pinkfong", thumbnail: "https://img.youtube.com/vi/XqZsoesa55w/mqdefault.jpg", ageGroup: "0-3", category: "music", channel: "Pinkfong" },
@@ -41,7 +43,7 @@ const objectToArray = (obj) => {
 // ============ INITIALIZATION ============
 export const initDatabase = async () => {
   try {
-    const videosSnap = await get(ref(db, 'videos'));
+    const videosSnap = await get(ref(db, `${ROOT}/videos`));
 
     if (!videosSnap.exists()) {
       console.log('Initializing database with default data...');
@@ -70,18 +72,18 @@ const seedDefaultData = async () => {
   const usersObj = {};
   DEFAULT_USERS.forEach(u => { usersObj[u.id] = u; });
 
-  await set(ref(db, 'videos'), videosObj);
-  await set(ref(db, 'channels'), channelsObj);
-  await set(ref(db, 'users'), usersObj);
-  await set(ref(db, 'settings'), DEFAULT_SETTINGS);
+  await set(ref(db, `${ROOT}/videos`), videosObj);
+  await set(ref(db, `${ROOT}/channels`), channelsObj);
+  await set(ref(db, `${ROOT}/users`), usersObj);
+  await set(ref(db, `${ROOT}/settings`), DEFAULT_SETTINGS);
 };
 
 const getAllData = async () => {
   const [videosSnap, channelsSnap, usersSnap, settingsSnap] = await Promise.all([
-    get(ref(db, 'videos')),
-    get(ref(db, 'channels')),
-    get(ref(db, 'users')),
-    get(ref(db, 'settings'))
+    get(ref(db, `${ROOT}/videos`)),
+    get(ref(db, `${ROOT}/channels`)),
+    get(ref(db, `${ROOT}/users`)),
+    get(ref(db, `${ROOT}/settings`))
   ]);
 
   return {
@@ -94,88 +96,88 @@ const getAllData = async () => {
 
 // ============ VIDEOS ============
 export const getVideos = async () => {
-  const snap = await get(ref(db, 'videos'));
+  const snap = await get(ref(db, `${ROOT}/videos`));
   return objectToArray(snap.val());
 };
 
 export const addVideo = async (video) => {
   const id = video.id || `v${Date.now()}`;
   const newVideo = { ...video, id, addedAt: Date.now() };
-  await set(ref(db, `videos/${id}`), newVideo);
+  await set(ref(db, `${ROOT}/videos/${id}`), newVideo);
   return newVideo;
 };
 
 export const updateVideo = async (id, updates) => {
-  await update(ref(db, `videos/${id}`), updates);
+  await update(ref(db, `${ROOT}/videos/${id}`), updates);
 };
 
 export const deleteVideo = async (id) => {
-  await remove(ref(db, `videos/${id}`));
+  await remove(ref(db, `${ROOT}/videos/${id}`));
 };
 
 // ============ CHANNELS ============
 export const getChannels = async () => {
-  const snap = await get(ref(db, 'channels'));
+  const snap = await get(ref(db, `${ROOT}/channels`));
   return objectToArray(snap.val());
 };
 
 export const addChannel = async (channel) => {
   const id = channel.id || `c${Date.now()}`;
   const newChannel = { ...channel, id };
-  await set(ref(db, `channels/${id}`), newChannel);
+  await set(ref(db, `${ROOT}/channels/${id}`), newChannel);
   return newChannel;
 };
 
 export const deleteChannel = async (id) => {
-  await remove(ref(db, `channels/${id}`));
+  await remove(ref(db, `${ROOT}/channels/${id}`));
 };
 
 // ============ USERS ============
 export const getUsers = async () => {
-  const snap = await get(ref(db, 'users'));
+  const snap = await get(ref(db, `${ROOT}/users`));
   return objectToArray(snap.val());
 };
 
 export const addUser = async (user) => {
   const id = user.id || `u${Date.now()}`;
   const newUser = { ...user, id, createdAt: Date.now() };
-  await set(ref(db, `users/${id}`), newUser);
+  await set(ref(db, `${ROOT}/users/${id}`), newUser);
   return newUser;
 };
 
 export const updateUser = async (id, updates) => {
-  await update(ref(db, `users/${id}`), updates);
+  await update(ref(db, `${ROOT}/users/${id}`), updates);
 };
 
 export const deleteUser = async (id) => {
-  await remove(ref(db, `users/${id}`));
+  await remove(ref(db, `${ROOT}/users/${id}`));
 };
 
 // ============ SETTINGS ============
 export const getSettings = async () => {
-  const snap = await get(ref(db, 'settings'));
+  const snap = await get(ref(db, `${ROOT}/settings`));
   return snap.val() || DEFAULT_SETTINGS;
 };
 
 export const updateSettings = async (updates) => {
-  await update(ref(db, 'settings'), updates);
+  await update(ref(db, `${ROOT}/settings`), updates);
 };
 
 // ============ REAL-TIME LISTENERS ============
 export const subscribeToVideos = (callback) => {
-  return onValue(ref(db, 'videos'), (snap) => {
+  return onValue(ref(db, `${ROOT}/videos`), (snap) => {
     callback(objectToArray(snap.val()));
   });
 };
 
 export const subscribeToUsers = (callback) => {
-  return onValue(ref(db, 'users'), (snap) => {
+  return onValue(ref(db, `${ROOT}/users`), (snap) => {
     callback(objectToArray(snap.val()));
   });
 };
 
 export const subscribeToChannels = (callback) => {
-  return onValue(ref(db, 'channels'), (snap) => {
+  return onValue(ref(db, `${ROOT}/channels`), (snap) => {
     callback(objectToArray(snap.val()));
   });
 };
@@ -202,7 +204,7 @@ export const importDatabase = async (data) => {
   if (data.videos) {
     const videosObj = {};
     data.videos.forEach(v => { videosObj[v.id] = v; });
-    await set(ref(db, 'videos'), videosObj);
+    await set(ref(db, `${ROOT}/videos`), videosObj);
   }
   return await getAllData();
 };

@@ -10,6 +10,8 @@ const VIDEO_LOAD_TIMEOUT = 15000; // 15 seconds - give more time
 function VideoPlayer() {
   const { currentVideo, setCurrentVideo, favorites, toggleFavorite, addToHistory, addWatchTime, markVideoUnavailable, getFilteredVideos, videos, selectedAgeGroup, selectedCategory, searchQuery, unavailableVideos } = useVideoStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsTimerRef = useRef(null);
   const containerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -194,6 +196,7 @@ function VideoPlayer() {
     const handleFSChange = () => {
       if (!document.fullscreenElement) {
         setIsFullscreen(false);
+        setControlsVisible(true);
         try { screen.orientation?.unlock?.(); } catch (e) {}
       }
     };
@@ -204,6 +207,33 @@ function VideoPlayer() {
       document.removeEventListener('webkitfullscreenchange', handleFSChange);
     };
   }, []);
+
+  // Auto-hide controls in fullscreen after 3 seconds
+  const resetControlsTimer = useCallback(() => {
+    setControlsVisible(true);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    if (isFullscreen) {
+      controlsTimerRef.current = setTimeout(() => {
+        setControlsVisible(false);
+      }, 3000);
+    }
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (isFullscreen) {
+      resetControlsTimer();
+    } else {
+      setControlsVisible(true);
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    }
+    return () => {
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    };
+  }, [isFullscreen, resetControlsTimer]);
+
+  const handleInteraction = useCallback(() => {
+    if (isFullscreen) resetControlsTimer();
+  }, [isFullscreen, resetControlsTimer]);
 
   const handleIframeLoad = useCallback(() => {
     console.log('Iframe loaded for video:', currentVideo?.id);
@@ -276,11 +306,14 @@ function VideoPlayer() {
   return (
     <AnimatePresence>
       <motion.div
-        className={`video-player-overlay ${isFullscreen ? 'fullscreen' : ''}`}
+        className={`video-player-overlay ${isFullscreen ? 'fullscreen' : ''} ${isFullscreen && !controlsVisible ? 'controls-hidden' : ''}`}
         ref={containerRef}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        onMouseMove={handleInteraction}
+        onTouchStart={handleInteraction}
+        onClick={handleInteraction}
       >
         <motion.div
           className="video-player-container"

@@ -573,3 +573,21 @@
     font-size: 0.7rem;
   }
 }
+
+/* Fullscreen controls auto-hide */
+.video-player-overlay.fullscreen .video-player-header,
+.video-player-overlay.fullscreen .video-info {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.video-player-overlay.fullscreen.controls-hidden .video-player-header {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-100%);
+}
+
+.video-player-overlay.fullscreen.controls-hidden .video-info {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100%);
+}
