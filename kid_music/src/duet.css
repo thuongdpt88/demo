@@ -1,0 +1,140 @@
+/* ... existing css ... */
+
+/* ========== DUET CATS THEME ========== */
+.duet-cats-theme {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #333;
+}
+
+.bg-split {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 0;
+}
+
+.left-bg {
+  left: 0;
+  background: #bde0fe; /* Light Blue */
+  border-right: 2px solid rgba(0,0,0,0.1);
+}
+
+.right-bg {
+  left: 50%;
+  background: #ffc8dd; /* Light Pink */
+}
+
+.play-area {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none; /* Let clicks pass through to container */
+}
+
+/* Cats */
+.cat-container {
+  position: absolute;
+  bottom: 0px;
+  width: 140px;
+  height: 140px;
+  transform-origin: bottom center;
+  transition: transform 0.1s;
+}
+
+.left-cat {
+  left: 25%;
+  transform: translateX(-50%);
+}
+
+.right-cat {
+  left: 75%;
+  transform: translateX(-50%);
+}
+
+.cat-container.meow {
+  transform: translateX(-50%) scale(1.1);
+}
+
+.cat-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+}
+
+.cat-svg.open {
+  /* Animation handled in logic/SVG prop */
+}
+
+/* Food Tiles */
+.food-tile {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 42px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+}
+
+/* Effects */
+.hit-effect-text {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  animation: floatUpFade 0.6s ease-out forwards;
+  z-index: 20;
+}
+
+@keyframes floatUpFade {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  50% { transform: translate(-50%, -100%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -150%) scale(1); opacity: 0; }
+}
+
+/* UI Overrides for this theme */
+.game-top-bar {
+  background: transparent !important;
+  padding-top: 15px;
+}
+
+.score-display {
+  color: #333 !important;
+  text-shadow: 2px 2px 0 #fff !important;
+  font-size: 36px !important;
+}
+
+.combo-display {
+  color: #ffaa00 !important;
+  text-shadow: 1px 1px 0 #fff !important;
+}
+
+.game-back-btn {
+  background: rgba(0,0,0,0.2) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.health-bar-container {
+  top: 0;
+  height: 6px !important;
+  background: rgba(0,0,0,0.1) !important;
+}
+
+.countdown-overlay {
+  background: rgba(255,255,255,0.4) !important;
+  backdrop-filter: blur(2px);
+}
+
+.countdown-number {
+  color: #ff4081 !important;
+  text-shadow: 3px 3px 0 #fff, 0 0 20px rgba(255,255,255,0.8) !important;
+}

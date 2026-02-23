@@ -1,0 +1,141 @@
+/* ... existing css ... */
+
+/* Mode Toggle */
+.mode-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 4px;
+    margin-left: auto; /* Push to right */
+    gap: 4px;
+}
+
+.mode-btn {
+    padding: 8px 16px;
+    border-radius: 16px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.mode-btn.active {
+    background: #6c5ce7;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(108, 92, 231, 0.4);
+}
+
+.select-header {
+    /* Need to ensure valid layout */
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Classic Mode Styles */
+.classic-theme {
+    background: #000;
+}
+
+.classic-tile {
+    position: absolute;
+    width: 25%; /* 4 columns */
+    background: #00c3ff;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 0 10px rgba(0, 195, 255, 0.5);
+    z-index: 10;
+    border-radius: 4px;
+}
+
+.classic-lane-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+}
+
+.classic-hit-zone {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+}
+
+.classic-lane-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 25%;
+    pointer-events: none;
+}
+
+.classic-lane-line {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.08);
+}
+
+.classic-key-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: rgba(255,255,255,0.25);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.classic-hit-zone-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00d4ff, #ff6bcb, #4dff91, #ffaa00);
+    box-shadow: 0 0 15px rgba(0,212,255,0.4), 0 0 30px rgba(255,107,203,0.2);
+    z-index: 20;
+}
+
+.classic-hit-effect {
+    position: absolute;
+    width: 25%;
+    height: 80px;
+    margin-top: -80px;
+    background: linear-gradient(to top, rgba(255,255,255,0.3), transparent);
+    animation: flash 0.4s ease-out forwards;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hit-text {
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px currentColor;
+    animation: hit-text-rise 0.5s ease-out forwards;
+}
+
+@keyframes hit-text-rise {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-30px); opacity: 0; }
+}
+
+.neon-text {
+    text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff, 0 0 40px #00f3ff;
+}
+
+@keyframes flash {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}

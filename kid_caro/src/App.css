@@ -1,0 +1,376 @@
+:root {
+  --neon-blue: #00f3ff;
+  --neon-pink: #bc13fe;
+  --neon-green: #39ff14;
+  --bg-color: #0d0d1a;
+  --grid-line: #1a1a2e;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: white;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: auto;
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+/* ===== TITLE ===== */
+h1 {
+  font-size: min(3rem, 8vw);
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow:
+    0 0 5px #fff,
+    0 0 10px #fff,
+    0 0 20px var(--neon-blue),
+    0 0 40px var(--neon-blue),
+    0 0 80px var(--neon-blue);
+  animation: flicker 1.5s infinite alternate;
+}
+
+.game-title {
+  font-size: min(1.8rem, 5vw);
+  margin: 0;
+}
+
+.subtitle {
+  color: rgba(255,255,255,0.5);
+  margin: 0 0 30px;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+}
+
+@keyframes flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% {
+    text-shadow:
+      0 0 5px #fff, 0 0 10px #fff,
+      0 0 20px var(--neon-blue), 0 0 40px var(--neon-blue), 0 0 80px var(--neon-blue);
+  }
+  20%, 24%, 55% { text-shadow: none; }
+}
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: min(90vw, 70vh);
+  margin-bottom: 10px;
+}
+
+.back-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.back-btn:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.mode-badge {
+  margin-left: auto;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.08);
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ===== MODE SELECT ===== */
+.mode-buttons {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 30px 40px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 160px;
+}
+
+.mode-card.pvp:hover, .mode-card.pvp:focus {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 25px rgba(0, 243, 255, 0.3);
+  background: rgba(0, 243, 255, 0.05);
+}
+.mode-card.ai:hover, .mode-card.ai:focus {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 25px rgba(57, 255, 20, 0.3);
+  background: rgba(57, 255, 20, 0.05);
+}
+
+.mode-icon { font-size: 3rem; }
+.mode-label { font-size: 1.2rem; font-weight: 700; color: #fff; }
+.mode-desc { font-size: 0.85rem; color: rgba(255,255,255,0.4); }
+
+/* ===== STATUS BAR ===== */
+.status-bar {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.player-turn {
+  padding: 8px 16px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.player-turn.active-x {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 15px var(--neon-blue);
+  color: var(--neon-blue);
+}
+
+.player-turn.active-o {
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 15px var(--neon-pink);
+  color: var(--neon-pink);
+}
+
+.ai-thinking {
+  margin-bottom: 8px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: rgba(57, 255, 20, 0.1);
+  border: 1px solid rgba(57, 255, 20, 0.3);
+  color: var(--neon-green);
+  font-size: 0.9rem;
+  animation: pulse-think 1s infinite alternate;
+}
+
+@keyframes pulse-think {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+/* ===== GAME BOARD ===== */
+.game-board {
+  --board-size: min(90vw, 70vh);
+  --cell-size: calc(var(--board-size) / 15);
+  display: grid;
+  grid-template-columns: repeat(15, var(--cell-size));
+  grid-template-rows: repeat(15, var(--cell-size));
+  gap: 0;
+  background-color: var(--grid-line);
+  border: 2px solid #333;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+  width: var(--board-size);
+  height: var(--board-size);
+}
+
+.cell {
+  background-color: var(--bg-color);
+  border: 1px solid #1a1a2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cell-size) * 0.5);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: var(--cell-size);
+  height: var(--cell-size);
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.cell:hover { background-color: #1a1a2e; }
+
+.cell.x {
+  color: var(--neon-blue);
+  text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+}
+.cell.o {
+  color: var(--neon-pink);
+  text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+}
+
+.cell.winning {
+  background-color: rgba(255, 255, 255, 0.2);
+  animation: pulse-win 1s infinite alternate;
+}
+
+.cell.last-move {
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes pulse-win {
+  from { box-shadow: inset 0 0 5px #fff; }
+  to { box-shadow: inset 0 0 20px #fff; }
+}
+
+/* ===== BUTTONS ===== */
+.reset-btn {
+  margin-top: 15px;
+  padding: 8px 24px;
+  font-size: 1rem;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 5px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.3s;
+}
+.reset-btn:hover {
+  color: #fff;
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* ===== WINNER OVERLAY ===== */
+.winner-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 100;
+  animation: fadeIn 0.3s ease;
+}
+
+.winner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.winner-content h2 {
+  font-size: min(3.5rem, 10vw);
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  margin: 0;
+  animation: neon-glow 1.5s ease-in-out infinite alternate;
+}
+
+.winner-content h2.win-x {
+  color: var(--neon-blue);
+  text-shadow: 0 0 10px var(--neon-blue), 0 0 30px var(--neon-blue);
+}
+.winner-content h2.win-o {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 30px var(--neon-pink);
+}
+
+.winner-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.neon-btn {
+  padding: 12px 28px;
+  font-size: 1.1rem;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+  transition: all 0.3s;
+  background: transparent;
+  color: #fff;
+}
+
+.neon-btn.primary {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+}
+.neon-btn.primary:hover {
+  background: var(--neon-blue);
+  color: #000;
+  box-shadow: 0 0 30px var(--neon-blue);
+}
+
+.neon-btn.secondary {
+  border-color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.7);
+}
+.neon-btn.secondary:hover {
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(255,255,255,0.3);
+}
+
+@keyframes neon-glow {
+  from {
+    text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--neon-blue), 0 0 40px var(--neon-blue);
+    filter: brightness(1);
+  }
+  to {
+    text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--neon-pink), 0 0 40px var(--neon-pink);
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .game-board {
+    --board-size: 95vw;
+    --cell-size: calc(95vw / 15);
+    width: 95vw;
+    height: 95vw;
+  }
+  h1 { font-size: 2rem; }
+  .game-title { font-size: 1.3rem; }
+  .status-bar { font-size: 1rem; }
+  .player-turn { padding: 6px 10px; font-size: 0.8rem; }
+  .mode-card { padding: 20px 24px; min-width: 130px; }
+  .mode-icon { font-size: 2.2rem; }
+  .neon-btn { padding: 10px 20px; font-size: 0.95rem; }
+}
