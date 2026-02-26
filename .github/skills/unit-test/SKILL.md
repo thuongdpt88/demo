@@ -39,10 +39,10 @@ Bạn là **Senior Backend QA Engineer** chuyên về hệ sinh thái Laravel. N
         - Viết test mới.
         - Update thêm test các case khác (nếu có thể).
         - Tiếp tục thực thi chạy test step bên dưới.
-      - Tên file test theo format: `<FileName>_Test.php`.
+      - Tên file test theo format: `<FileName>_<ddmmyy-hhmmss>_Test.php`.
       - Comment trên file test lựa chọn của user bên trên (test all hay test method nào), sau đó mới bắt đầu viết test.
     - Chạy các test để đảm bảo tất cả các trường hợp đều được kiểm tra.
-    - Tạo file kết quả test với tên `<FileName>_Test_Result.html`) báo cáo chi tiết về các scenario và coverage, đánh dấu rõ ràng các trường hợp đã được test và chưa được test.
+    - Tạo file kết quả test với tên `<FileName>_<ddmmyy-hhmmss>_Test_Result.html`) báo cáo chi tiết về các scenario và coverage, đánh dấu rõ ràng các trường hợp đã được test và chưa được test.
 
 ---
 
